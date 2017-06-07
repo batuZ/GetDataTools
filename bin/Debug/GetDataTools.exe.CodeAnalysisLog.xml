@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="c:\program files (x86)\microsoft visual studio 11.0\team tools\static analysis tools\fxcop\Xml\CodeAnalysisReport.xsl"?>
+<FxCopReport Version="11.0">
+ <Targets>
+  <Target Name="C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\bin\Debug\GetDataTools.exe">
+   <Modules>
+    <Module Name="getdatatools.exe">
+     <Namespaces>
+      <Namespace Name="GetDataTools._2_坡度线">
+       <Types>
+        <Type Name="GeneralShp" Kind="Class" Accessibility="Assembly" ExternallyVisible="False">
+         <Members>
+          <Member Name="#.ctor(System.String,System.String,OSGeo.OGR.wkbGeometryType)" Kind="Method" Static="False" Accessibility="Public" ExternallyVisible="False">
+           <Messages>
+            <Message TypeName="为格式化方法提高正确的参数" Category="Microsoft.Usage" CheckId="CA2241" Status="Active" Created="2016-03-20 13:08:41Z" FixCategory="DependsOnFix">
+             <Issue Name="MissingFormatItem" Certainty="75" Level="Warning" Path="c:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\2_坡度线" File="GeneralShp.cs" Line="32">方法 'GeneralShp.GeneralShp(string, string, wkbGeometryType)' 调用 'Console.WriteLine(string, object)' 并且不为参数 "1" 提供格式项。提供的格式字符串为:“"%s 驱动不可用！\n"”</Issue>
+             <Issue Name="MissingFormatItem" Certainty="75" Level="Warning" Path="c:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\2_坡度线" File="GeneralShp.cs" Line="55">方法 'GeneralShp.GeneralShp(string, string, wkbGeometryType)' 调用 'Console.WriteLine(string, object)' 并且不为参数 "1" 提供格式项。提供的格式字符串为:“"创建矢量文件【%s】失败！\n"”</Issue>
+            </Message>
+           </Messages>
+          </Member>
+         </Members>
+        </Type>
+        <Type Name="SlopeDem" Kind="Class" Accessibility="Public" ExternallyVisible="True">
+         <Messages>
+          <Message TypeName="ImplementIDisposableCorrectly" Category="Microsoft.Design" CheckId="CA1063" Status="Active" Created="2016-03-20 13:08:41Z" FixCategory="Breaking">
+           <Issue Name="ProvideDisposeBool" Certainty="95" Level="Error">对 'SlopeDem' 提供 Dispose(bool) 的可重写实现或将该类型标记为密封。对 Dispose(false) 的调用应仅清理本机资源。对 Dispose(true) 的调用应既清理托管资源又清理本机资源。</Issue>
+          </Message>
+         </Messages>
+         <Members>
+          <Member Name="#CP_Prc(System.String,System.String,System.Int32,System.Int32)" Kind="Method" Static="False" Accessibility="Private" ExternallyVisible="False">
+           <Messages>
+            <Message TypeName="DoNotLockOnObjectsWithWeakIdentity" Category="Microsoft.Reliability" CheckId="CA2002" Status="Active" Created="2016-03-20 13:08:41Z" FixCategory="NonBreaking">
+             <Issue Certainty="75" Level="CriticalError" Path="c:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\2_坡度线" File="SlopeDem-0318.cs" Line="577">'SlopeDem.CP_Prc(string, string, int, int)' 锁定类型 'bool[,]' 的引用。请使用对具有强标识的对象的锁定替换它。</Issue>
+            </Message>
+           </Messages>
+          </Member>
+          <Member Name="#Dispose()" Kind="Method" Static="False" Accessibility="Public" ExternallyVisible="True">
+           <Messages>
+            <Message TypeName="ImplementIDisposableCorrectly" Category="Microsoft.Design" CheckId="CA1063" Status="Active" Created="2016-03-20 13:08:41Z" FixCategory="Breaking">
+             <Issue Name="DisposeImplementation" Certainty="95" Level="Error" Path="c:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\2_坡度线" File="SlopeDem-0318.cs" Line="1663">修改 'SlopeDem.Dispose()'，使它先调用 Dispose(true)，然后对当前对象实例(在 Visual Basic 中为“this”或“Me”)调用 GC.SuppressFinalize，最后返回。</Issue>
+            </Message>
+           </Messages>
+          </Member>
+         </Members>
+        </Type>
+        <Type Name="WorkFlow" Kind="Class" Accessibility="Assembly" ExternallyVisible="False">
+         <Members>
+          <Member Name="#poDuM(System.String,System.Int32)" Kind="Method" Static="True" Accessibility="Public" ExternallyVisible="False">
+           <Messages>
+            <Message TypeName="DoNotLockOnObjectsWithWeakIdentity" Category="Microsoft.Reliability" CheckId="CA2002" Status="Active" Created="2016-03-20 13:08:41Z" FixCategory="NonBreaking">
+             <Issue Certainty="75" Level="CriticalError" Path="c:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\2_坡度线" File="WorkFlow-0317.cs" Line="78">'WorkFlow.poDuM(string, int)' 锁定类型 'string' 的引用。请使用对具有强标识的对象的锁定替换它。</Issue>
+            </Message>
+           </Messages>
+          </Member>
+         </Members>
+        </Type>
+       </Types>
+      </Namespace>
+     </Namespaces>
+    </Module>
+   </Modules>
+  </Target>
+ </Targets>
+ <Rules>
+  <Rule TypeName="DoNotLockOnObjectsWithWeakIdentity" Category="Microsoft.Reliability" CheckId="CA2002">
+   <Name>不要锁定具有弱标识的对象</Name>
+   <Description>不要锁定可能跨 AppDomain 抽取的对象或没有强标识的对象。</Description>
+   <Resolution Name="Default">{0} 锁定类型 {1} 的引用。请使用对具有强标识的对象的锁定替换它。</Resolution>
+   <Owner />
+   <Url>http://msdn.microsoft.com/library/ms182290(VS.100).aspx</Url>
+   <Email>[none]</Email>
+   <MessageLevel Certainty="75">CriticalError</MessageLevel>
+   <File Name="reliabilityrules.dll" Version="11.0.0.0" />
+  </Rule>
+  <Rule TypeName="ImplementIDisposableCorrectly" Category="Microsoft.Design" CheckId="CA1063">
+   <Name>正确实现 IDisposable</Name>
+   <Description>所有 IDisposable 类型都应正确实现 Dispose 模式。</Description>
+   <Resolution Name="DisposeImplementation">修改 {0}，使它先调用 Dispose(true)，然后对当前对象实例(在 Visual Basic 中为“this”或“Me”)调用 GC.SuppressFinalize，最后返回。</Resolution>
+   <Resolution Name="ProvideDisposeBool">对 {0} 提供 Dispose(bool) 的可重写实现或将该类型标记为密封。对 Dispose(false) 的调用应仅清理本机资源。对 Dispose(true) 的调用应既清理托管资源又清理本机资源。</Resolution>
+   <Owner />
+   <Url>http://msdn.microsoft.com/library/ms244737(VS.100).aspx</Url>
+   <Email>[none]</Email>
+   <MessageLevel Certainty="95">Error</MessageLevel>
+   <File Name="designrules.dll" Version="11.0.0.0" />
+  </Rule>
+  <Rule TypeName="为格式化方法提高正确的参数" Category="Microsoft.Usage" CheckId="CA2241">
+   <Name>为格式化方法提高正确的参数</Name>
+   <Description>为 String.Format 调用提供正确的参数数量。</Description>
+   <Resolution Name="MissingFormatItem">方法 {0} 调用 {1} 并且不为参数 {2} 提供格式项。提供的格式字符串为:“{3}”</Resolution>
+   <Owner>RuleOwner</Owner>
+   <Url>http://msdn.microsoft.com/library/ms182361(VS.100).aspx</Url>
+   <Email />
+   <MessageLevel Certainty="75">Warning</MessageLevel>
+   <File Name="dataflowrules.dll" Version="11.0.0.0" />
+  </Rule>
+ </Rules>
+ <Localized>
+  <String Key="Category">类别</String>
+  <String Key="Certainty">确定性</String>
+  <String Key="CollapseAll">全部折叠</String>
+  <String Key="CheckId">检查 ID</String>
+  <String Key="Error">错误</String>
+  <String Key="Errors">错误</String>
+  <String Key="ExpandAll">全部展开</String>
+  <String Key="Help">帮助</String>
+  <String Key="Line">行</String>
+  <String Key="Messages">消息</String>
+  <String Key="LocationNotStoredInPdb">[位置未存储在 Pdb 中]</String>
+  <String Key="Project">项目</String>
+  <String Key="Resolution">解析</String>
+  <String Key="Rule">规则</String>
+  <String Key="RuleFile">规则文件</String>
+  <String Key="RuleDescription">规则说明</String>
+  <String Key="Source">源</String>
+  <String Key="Status">状态</String>
+  <String Key="Target">目标</String>
+  <String Key="Warning">警告</String>
+  <String Key="Warnings">警告</String>
+  <String Key="ReportTitle">代码分析报告</String>
+ </Localized>
+</FxCopReport>
