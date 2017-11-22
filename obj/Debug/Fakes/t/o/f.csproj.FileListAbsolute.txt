@@ -1,8 +1,0 @@
-C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\obj\Debug\Fakes\t\b\tools.1.0.0.0.Fakes.xml
-C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\obj\Debug\Fakes\t\b\tools.1.0.0.0.Fakes.dll
-C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\obj\Debug\Fakes\t\b\tools.1.0.0.0.Fakes.pdb
-C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\obj\Debug\Fakes\t\b\Microsoft.QualityTools.Testing.Fakes.dll
-C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\obj\Debug\Fakes\t\b\zh-Hans\Microsoft.QualityTools.Testing.Fakes.resources.dll
-C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\obj\Debug\Fakes\t\o\f.csprojResolveAssemblyReference.cache
-C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\obj\Debug\Fakes\t\o\tools.1.0.0.0.Fakes.dll
-C:\Users\Batu\AppData\Roaming\360CloudUI\Cache\752928674\AutoUpdataPc\mycode\GetDataTools\obj\Debug\Fakes\t\o\tools.1.0.0.0.Fakes.pdb

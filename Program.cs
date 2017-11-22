@@ -15,14 +15,14 @@ namespace GetDataTools
         [STAThread]
         static void Main()
         {
-            if (Tolsk.ClassTolsk.kyes().Contains(Soft.getMNum()))
-            {
+            //if (Tolsk.ClassTolsk.kyes().Contains(Soft.getMNum()))
+            //{
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 Application.Run(new MasterWin());
-            }
-            else
-            { StaticTools.contion(); }
+            //}
+            //else
+            //{ StaticTools.contion(); }
         }
     }
 
