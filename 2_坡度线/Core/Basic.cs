@@ -63,9 +63,9 @@ namespace GetDataTools._2_坡度线.Core
         public string PolygonShpPath;
         public int cutIndex;
         public int Weight;
-        public int High ;
+        public int High;
         public double ImportLevel;
-        public CutData(string dempath,string slpPath,string shpPath,int cut_index,double importLevel)
+        public CutData(string dempath, string slpPath, string shpPath, int cut_index, double importLevel)
         {
             this.DemPath = dempath;
             this.SlopePath = slpPath;

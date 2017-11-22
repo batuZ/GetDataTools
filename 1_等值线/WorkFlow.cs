@@ -12,14 +12,14 @@ namespace GetDataTools._1_等值线
     {
         public static string dzx(string inIMGPath) 
         {
-            if (Tolsk.ClassTolsk.kyes().Contains(Soft.getMNum()))
-            {
+            //if (Tolsk.ClassTolsk.kyes().Contains(Soft.getMNum()))
+            //{
                 string 原始等值线 = 生成等值线.dzx(inIMGPath);
                 string cleanLine = 清理等值线.cleanDS(原始等值线);
                 return 等值线转POLYGON.dzPoly(cleanLine);
-            }
-            else
-            { return ""; }
+            //}
+            //else
+            //{ return ""; }
         }
       
     }
