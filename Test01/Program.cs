@@ -12,7 +12,7 @@ namespace Test01
 {
     class Program
     {
-        static string dsmPath = "";
+        static string dsmPath = @"C:\temp\outlinetest02.img";
         static string shpSavePath = "";
         static void Main(string[] args)
         {
@@ -20,13 +20,16 @@ namespace Test01
             OSGeo.OGR.Ogr.RegisterAll();
 
             //1 等高线
-            string dzx = dzPoly(cleanDS(getDZX()));
+            string dzx1 = getDZX();
+            string dzx2 = cleanDS(dzx1);
+            string dzx = dzPoly(dzx2);
+
 
             //2 坡度图
             string pdt = getPDT();
 
             //3 坡度线
-            string pdx = getPDX(3);
+            string pdx = getPDX(pdt,3);
 
             //4 筛选
             selectFeat(dzx, pdx, shpSavePath);
@@ -74,7 +77,6 @@ namespace Test01
             }
 
             //创建空的SHP
-            OSGeo.OGR.Ogr.RegisterAll();
             OSGeo.OGR.Driver dr = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
             string a = StaticTools.tempFilePath("shp", "原始等值线");
             OSGeo.OGR.DataSource ds = dr.CreateDataSource(a, null);
@@ -279,13 +281,13 @@ namespace Test01
             }
             InDataset.Dispose();
 
-            asyRE = new AutoResetEvent(false);
-            Thread th = new Thread(() =>
-            {
+            //asyRE = new AutoResetEvent(false);
+            //Thread th = new Thread(() =>
+            //{
                 MySloping(DemPath);
-            });
-            th.Start();
-            asyRE.WaitOne();
+            //});
+            //th.Start();
+            //asyRE.WaitOne();
             InDataset = OSGeo.GDAL.Gdal.Open(DemPath, OSGeo.GDAL.Access.GA_ReadOnly);
             //FixOutLineRaster(InDataset.GetRasterBand(1), demNodata);
             //处理外围的Raster
@@ -302,13 +304,13 @@ namespace Test01
             {
 
                 DemCutData data = new DemCutData(DemPath, i, 300, 300, 4);
-                await Task.Run(() =>
-                {
-                    TKData(data);
-                    iCount++;
-                    if (iCount == Maxcnt)
-                        asyRE.Set();
-                });
+                //await Task.Run(() =>
+                //{
+                TKData(data);
+                //iCount++;
+                //    if (iCount == Maxcnt)
+                //        asyRE.Set();
+                //});
             }
         }
         private static void BufferOnePixel(OSGeo.GDAL.Band TargetBand)
@@ -391,15 +393,14 @@ namespace Test01
         #endregion
 
         #region 坡度线
-        static string getPDX(int Lev)
+        static string getPDX(string slopMap,int Lev)
         {
             List<string> levelFiles = new List<string>();
             for (int i = 0; i < Lev; i++)
             {
                 Stopwatch ssw = new Stopwatch(); ssw.Start(); Console.WriteLine("开始计算第{0}级SlopePolygon" + i + 1);
                 string _outShpPath = StaticTools.tempFilePath("shp", "SolpePolyLev" + i.ToString());
-                string _outFilePath = "";
-                MyGetOutlines(dsmPath, _outFilePath, _outShpPath, 80 - i * 5);
+                MyGetOutlines(dsmPath, slopMap, _outShpPath, 80 - i * 5);
                 levelFiles.Add(_outShpPath);
                 ssw.Stop(); Console.WriteLine("第{0}级SlopePolygon完成，用时{1}！", i + 1, ssw.Elapsed.ToString());
             }
@@ -410,34 +411,34 @@ namespace Test01
         static QThread qthread;
         static void MyGetOutlines(string inDataPath, string _outDSpath, string OutShpPath, double ImprotLevel)
         {
-            qthread = new QThread(OutShpPath);
-            asyRE = new AutoResetEvent(false);
-            Thread th = new Thread(() =>
-            {
+            //qthread = new QThread(OutShpPath);
+            //asyRE = new AutoResetEvent(false);
+            //Thread th = new Thread(() =>
+            //{
                 GetOlines00(inDataPath, _outDSpath, OutShpPath, ImprotLevel);
-            });
-            th.Start();
-            asyRE.WaitOne();
-            qthread.Close();
+            //});
+            //th.Start();
+            //asyRE.WaitOne();
+            //qthread.Close();
         }
         private static async void GetOlines00(string inDataPath, string _outDSpath, string OutShpPath, double ImprotLevel = 80)
         {
 
-            OSGeo.GDAL.Dataset _inDataset = OSGeo.GDAL.Gdal.Open(inDataPath, OSGeo.GDAL.Access.GA_ReadOnly);
-            OSGeo.GDAL.Dataset _outDataset = OSGeo.GDAL.Gdal.Open(_outDSpath, OSGeo.GDAL.Access.GA_ReadOnly);
+           // OSGeo.GDAL.Dataset _inDataset = OSGeo.GDAL.Gdal.Open(inDataPath, OSGeo.GDAL.Access.GA_ReadOnly);
+           // OSGeo.GDAL.Dataset _outDataset = OSGeo.GDAL.Gdal.Open(_outDSpath, OSGeo.GDAL.Access.GA_ReadOnly);
 
 
             int iCount = 0, Maxcnt = GetCutNumberOfImg(inDataPath);
             for (int i = 0; i < Maxcnt; i++)
             {
                 CutData data = new CutData(inDataPath, _outDSpath, OutShpPath, i, ImprotLevel);
-                await Task.Run(() =>
-                {
+                //await Task.Run(() =>
+                //{
                     TKData(data);
-                    iCount++;
-                    if (iCount == Maxcnt)
-                        asyRE.Set();
-                });
+                //    iCount++;
+                //    if (iCount == Maxcnt)
+                //        asyRE.Set();
+                //});
             }
         }
         /// <summary>
