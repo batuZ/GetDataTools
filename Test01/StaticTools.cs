@@ -15,6 +15,16 @@ namespace Test01
             myDS.ExecuteSQL(a, null, "");
             myDS.Dispose();
         }
+        public static bool IsDispose(this OSGeo.GDAL.Dataset myDS)
+        {
+            try
+            {
+                int e = myDS.RasterCount;
+                return false;
+            }
+            catch { return true; }
+
+        }
         public static string tempFilePath(string format, string whatAmI = "")
         {
             if (!Directory.Exists(@"D:\TEMPFORGETDATATOOLS\"))
@@ -66,6 +76,39 @@ namespace Test01
             nextGeom.Dispose();
             nextEnve.Dispose();
             return res;
+        }
+        /// <summary>
+        /// 标准差
+        /// </summary>
+        /// <param name="dzxLayer"></param>
+        /// <param name="aue"></param>
+        /// <param name="bzc"></param>
+        public static void getBZC(OSGeo.OGR.Layer dzxLayer, out double aue, out double bzc)
+        {
+            //获取Featuer数
+            int featCount = dzxLayer.GetFeatureCount(0);
+
+            // 1 拿到每个Featuer的Value
+            double[] values = new double[featCount];
+            for (int i = 0; i < featCount; i++)
+            {
+                OSGeo.OGR.Feature fileFeat = dzxLayer.GetFeature(i);
+                OSGeo.OGR.Geometry fileGeom = fileFeat.GetGeometryRef();
+                values[i] = fileFeat.GetFieldAsDouble("EVE");
+                fileGeom.Dispose();
+                fileFeat.Dispose();
+            }
+            // 2 求Values的平均值
+            aue = values.Average();
+
+            // 3 求values与平均值差的平方和
+            double pingFangHe = 0;
+            for (int i = 0; i < featCount; i++)
+            {
+                pingFangHe += (values[i] - aue) * (values[i] - aue);
+            }
+            // 4 每个值与平均值的差相加,除Featuer数.再开方,得到标准差
+            bzc = Math.Sqrt(pingFangHe / featCount);
         }
     }
 }

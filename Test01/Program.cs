@@ -12,28 +12,39 @@ namespace Test01
 {
     class Program
     {
-        static string dsmPath = @"C:\temp\outlinetest02.img";
-        static string shpSavePath = @"C:\temp\aa.shp";
-        static OSGeo.OGR.Driver shpDataDriver;
-        static OSGeo.OGR.DataSource shpDataSet;
-        static OSGeo.GDAL.Dataset dsmDataSet;
+        static string dsmPath = @"E:\test\imgData\outlinetest02.img";
+        static string shpSavePath = @"C:\temp\asf";
+        static string slopeImgSavePath = @"C:\temp\asf\uu.img";
+        static OSGeo.OGR.Driver shpDataDriver;              //shp文件驱动
+        static OSGeo.OGR.DataSource shpDataSet;             //shp文件集合DIR
+        static OSGeo.GDAL.Driver gdalDriver;                //IMG文件驱动
+        static OSGeo.GDAL.Dataset dsmDataset;               //dsmDataSet;
+        static OSGeo.GDAL.Dataset slopeDataSet;             //slopeDataSet
 
+        //用户定义参数
+
+        static int jianG = 2;                               //生成等值线的间隔
+        static double minLength = 50;                       //清理等值线的最小长度
+        static double maxLength = 2600;                     //清理等值线的最大长度
+        static double sec = 2;                              //2倍的标准差;1倍为68.2%;2倍为95.4%;3倍为99.8%;正态分布
+        static double imgNodata = -100000;                  //dsm和slope的无效值
+        static int CutWeight = 300;                         //slope子图大小，影响计算效率
+        static int OverlapWeight = 4;                       //slope子图重叠区
         static void Main(string[] args)
         {
             OSGeo.GDAL.Gdal.AllRegister();
             OSGeo.OGR.Ogr.RegisterAll();
             shpDataDriver = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
+            gdalDriver = OSGeo.GDAL.Gdal.GetDriverByName("HFA");
             shpDataSet = shpDataDriver.CreateDataSource(shpSavePath, null);
 
             //1 等高线
-            //string dzx1 = getDZX();
-            //string dzx2 = cleanDS(dzx1);
-            //string dzx = dzPoly(dzx2);
-            getDZX_();
-            cleanDS_(shpSavePath);
-            dzPoly_();
+            //OSGeo.OGR.Layer dzxLayer = getDZX_();
+            //OSGeo.OGR.Layer clearLines = cleanDS_(dzxLayer);
+            //OSGeo.OGR.Layer dzPoly = dzPoly_(clearLines);
+
             //2 坡度图
-            // string pdt = getPDT();
+            buildSlope();
 
             //3 坡度线
             // string pdx = getPDX(pdt, 3);
@@ -55,166 +66,75 @@ namespace Test01
         /// 获取等高线
         /// </summary>
         /// <returns></returns>
-        static string getDZX()
+        static OSGeo.OGR.Layer getDZX_()
         {
-            //无效值
-            double noDataValue;
-
-            //0不使用无效值,1使用无效值
-            int hasDataValue;
-
             //读入数据源
             OSGeo.GDAL.Dataset inData = OSGeo.GDAL.Gdal.Open(dsmPath, OSGeo.GDAL.Access.GA_ReadOnly);
 
             //分析数据源
+            double noDataValue;                 //无效值
+            int hasDataValue;                   //0不使用无效值,1使用无效值
             inData.GetRasterBand(1).GetNoDataValue(out noDataValue, out hasDataValue);
-
+            //WKT
+            string wkt = inData.GetProjectionRef();
+            OSGeo.OSR.SpatialReference srs = wkt == "" ? null : new OSGeo.OSR.SpatialReference(wkt);
+            //图像值属性，最大值、最小值、平均值
             double min, max, mean, std;
             inData.GetRasterBand(1).GetStatistics(0, 1, out min, out max, out mean, out std);
-
-            int jianG = 2;
-
+            //计算每级线的值，加0.5是确保取到最接近的整数，不被四舍五入
             int count = Convert.ToInt32((max - min) / jianG + 0.5);
-
             double[] shu = new double[count];
-
             for (int i = 0; i < count; i++)
-            {
                 shu[i] = min + jianG * i;
-            }
 
-            //创建空的SHP
-            OSGeo.OGR.Driver dr = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
-            string a = StaticTools.tempFilePath("shp", "原始等值线");
-            OSGeo.OGR.DataSource ds = dr.CreateDataSource(a, null);
-            OSGeo.OGR.Layer dzxLayer = ds.CreateLayer("", null, OSGeo.OGR.wkbGeometryType.wkbMultiLineString, null);
-            OSGeo.OGR.FieldDefn fieldDf0 = new OSGeo.OGR.FieldDefn("LID", OSGeo.OGR.FieldType.OFTInteger);
-            OSGeo.OGR.FieldDefn fieldDf1 = new OSGeo.OGR.FieldDefn("EVE", OSGeo.OGR.FieldType.OFTReal);
-            dzxLayer.CreateField(fieldDf0, 1);//ID
-            dzxLayer.CreateField(fieldDf1, 1);//Value
-            //Band(1), 间隔, 起始高度, 分段数量, 分段值数组, 是否有无效值, 无效值, 预置图层. ID字段, 高度值字段, null , null
-            OSGeo.GDAL.Gdal.ContourGenerate(inData.GetRasterBand(1), jianG, min, count, shu, hasDataValue, noDataValue, dzxLayer, 0, 1, null, null);
-            if (dzxLayer.GetFeatureCount(0) > 0)
-            { Console.WriteLine("等值线创建完成！"); }
-            else { Console.WriteLine("等值线创建失败！"); }
-            ds.Dispose();
-            inData.Dispose();
-            return a;
-        }
-        static void getDZX_()
-        {
-            //无效值
-            double noDataValue;
-
-            //0不使用无效值,1使用无效值
-            int hasDataValue;
-
-            //读入数据源
-            OSGeo.GDAL.Dataset inData = OSGeo.GDAL.Gdal.Open(dsmPath, OSGeo.GDAL.Access.GA_ReadOnly);
-            //分析数据源
-            inData.GetRasterBand(1).GetNoDataValue(out noDataValue, out hasDataValue);
-            OSGeo.OSR.SpatialReference srs = new OSGeo.OSR.SpatialReference(inData.GetProjectionRef());
-            double min, max, mean, std;
-            inData.GetRasterBand(1).GetStatistics(0, 1, out min, out max, out mean, out std);
-
-            int jianG = 2;
-
-            int count = Convert.ToInt32((max - min) / jianG + 0.5);
-
-            double[] shu = new double[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                shu[i] = min + jianG * i;
-            }
-
-            //创建空的SHP
+            //创建空的SHP，准备塞入数据
             OSGeo.OGR.Layer dzxLayer = shpDataSet.CreateLayer("dzx", srs, OSGeo.OGR.wkbGeometryType.wkbMultiLineString, null);
+            //必须有这两个字段，函数要往里塞值，其实没毛用
             OSGeo.OGR.FieldDefn fieldDf0 = new OSGeo.OGR.FieldDefn("LID", OSGeo.OGR.FieldType.OFTInteger);
             OSGeo.OGR.FieldDefn fieldDf1 = new OSGeo.OGR.FieldDefn("EVE", OSGeo.OGR.FieldType.OFTReal);
             dzxLayer.CreateField(fieldDf0, 1);//ID
             dzxLayer.CreateField(fieldDf1, 1);//Value
+
             //Band(1), 间隔, 起始高度, 分段数量, 分段值数组, 是否有无效值, 无效值, 预置图层. ID字段, 高度值字段, null , null
             OSGeo.GDAL.Gdal.ContourGenerate(inData.GetRasterBand(1), jianG, min, count, shu, hasDataValue, noDataValue, dzxLayer, 0, 1, null, null);
-            if (dzxLayer.GetFeatureCount(0) > 0)
-            { Console.WriteLine("等值线创建完成！"); }
-            else { Console.WriteLine("等值线创建失败！"); }
-            dzxLayer.Dispose();
             inData.Dispose();
+            if (dzxLayer.GetFeatureCount(0) > 0)
+            {
+                return dzxLayer;
+            }
+            else
+            {
+                return null;
+            }
         }
         /// <summary>
         /// 通过线长,值 清理等值线
         /// </summary>
         /// <param name="dzx"></param>
         /// <returns></returns>
-        static string cleanDS(string dzx)
+        static OSGeo.OGR.Layer cleanDS_(OSGeo.OGR.Layer dzxLayer)
         {
-            Console.WriteLine("开始清理等值线！");
-            double aue, bzc; _标准差(dzx, out aue, out bzc);
-            double minLength = 50;
-            double maxLength = 2600;
-            double minValue = aue - bzc * 2;
-            double maxValue = aue + bzc * 2;
-            //open dzx
-            OSGeo.OGR.Ogr.RegisterAll();
-            OSGeo.OGR.Driver dr = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
-            OSGeo.OGR.DataSource dzxDS = dr.Open(dzx, 0);
-            OSGeo.OGR.Layer dzxLayer = dzxDS.GetLayerByIndex(0);
-            //new a shp
-            string cleanline = StaticTools.tempFilePath("shp", "清理后的等值线");
-            OSGeo.OGR.DataSource newdzxDS = dr.CreateDataSource(cleanline, null);
-            OSGeo.OGR.Layer newdzxLayer = newdzxDS.CreateLayer(dzxLayer.GetName(), dzxLayer.GetSpatialRef(), dzxLayer.GetGeomType(), null);
-
-            for (int i = 0; i < dzxLayer.GetFeatureCount(0); i++)
-            {
-                OSGeo.OGR.Feature fileFeat = dzxLayer.GetFeature(i);
-                OSGeo.OGR.Geometry fileGeom = fileFeat.GetGeometryRef();
-
-                double FeatLength = fileGeom.Length();
-                bool s1 = FeatLength > minLength && FeatLength < maxLength;
-
-                double featValue = fileFeat.GetFieldAsDouble("EVE");
-                bool s2 = featValue > minValue && featValue < maxValue;
-
-                bool isR = fileGeom.IsRing();
-                if (s1 && s2 && isR)
-                {
-                    newdzxLayer.CreateFeature(fileFeat);
-                }
-                fileFeat.Dispose();
-            }
-            newdzxDS.Dispose();
-            dzxDS.Dispose();
-            Console.WriteLine("清理等值线完成！");
-            return cleanline;
-        }
-        static void cleanDS_(string dzx)
-        {
-            Console.WriteLine("开始清理等值线！");
-            //open dzx
-
-            OSGeo.OGR.Layer dzxLayer = shpDataSet.GetLayerByName("aa");
-            dzxLayer = shpDataSet.GetLayerByIndex(0);
             //new a shp
             OSGeo.OGR.Layer newdzxLayer = shpDataSet.CreateLayer("clear", dzxLayer.GetSpatialRef(), dzxLayer.GetGeomType(), null);
-            int dd = shpDataSet.GetLayerCount();
-            double aue, bzc; _标准差_(dzxLayer, out aue, out bzc);
-            double minLength = 50;
-            double maxLength = 2600;
-            double minValue = aue - bzc * 2;
-            double maxValue = aue + bzc * 2;
 
-            for (int i = 0; i < dzxLayer.GetFeatureCount(0); i++)
+            //aue平均值，bzc标准差
+            double aue, bzc;
+            StaticTools.getBZC(dzxLayer, out aue, out bzc);
+            //清理过大和过小的高度值，取值范围为平均值两则，2倍的标准差，约为95.4%
+            double minValue = aue - bzc * sec;
+            double maxValue = aue + bzc * sec;
+            int FeatureCount = dzxLayer.GetFeatureCount(0);
+            for (int i = 0; i < FeatureCount; i++)
             {
                 OSGeo.OGR.Feature fileFeat = dzxLayer.GetFeature(i);
                 OSGeo.OGR.Geometry fileGeom = fileFeat.GetGeometryRef();
-
+                //判断长度
                 double FeatLength = fileGeom.Length();
                 bool s1 = FeatLength > minLength && FeatLength < maxLength;
-
+                //判断值
                 double featValue = fileFeat.GetFieldAsDouble("EVE");
                 bool s2 = featValue > minValue && featValue < maxValue;
-
+                //判断闭合
                 bool isR = fileGeom.IsRing();
                 if (s1 && s2 && isR)
                 {
@@ -223,130 +143,21 @@ namespace Test01
                 fileFeat.Dispose();
             }
             dzxLayer.Dispose();
-            newdzxLayer.Dispose();
+#if BT_Release
+            //删掉未清理的等值线 dzxLayer
             shpDataSet.DeleteLayer(0);
-            Console.WriteLine("清理等值线完成！");
+#endif
+            if (newdzxLayer.GetFeatureCount(0) > 0)
+                return newdzxLayer;
+            else
+                return null;
         }
-        /// <summary>
-        /// 标准差
-        /// </summary>
-        /// <param name="dzx"></param>
-        /// <param name="aue"></param>
-        /// <param name="bzc"></param>
-        static void _标准差(string dzx, out double aue, out double bzc)
-        {
-            OSGeo.OGR.Ogr.RegisterAll();
-            OSGeo.OGR.Driver dr = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
-            OSGeo.OGR.DataSource dzxDS = dr.Open(dzx, 0);
-            OSGeo.OGR.Layer dzxLayer = dzxDS.GetLayerByIndex(0);
-
-            //获取Featuer数
-            int featCount = dzxLayer.GetFeatureCount(0);
-
-            // 1 拿到每个Featuer的Value
-            double[] values = new double[featCount];
-            for (int i = 0; i < featCount; i++)
-            {
-                OSGeo.OGR.Feature fileFeat = dzxLayer.GetFeature(i);
-                OSGeo.OGR.Geometry fileGeom = fileFeat.GetGeometryRef();
-                values[i] = fileFeat.GetFieldAsDouble("EVE");
-                fileGeom.Dispose();
-                fileFeat.Dispose();
-            }
-            dzxDS.Dispose();
-            // 2 求Values的平均值
-            aue = values.Average();
-            // 3 求values与平均值差的平方和
-            double pingFangHe = 0;
-            for (int i = 0; i < featCount; i++)
-            {
-                pingFangHe += (values[i] - aue) * (values[i] - aue);
-            }
-            // 4 每个值与平均值的差相加,除Featuer数.再开方,得到标准差
-            bzc = Math.Sqrt(pingFangHe / featCount);
-        }
-        static void _标准差_(OSGeo.OGR.Layer dzxLayer, out double aue, out double bzc)
-        {
-            //获取Featuer数
-            int featCount = dzxLayer.GetFeatureCount(0);
-
-            // 1 拿到每个Featuer的Value
-            double[] values = new double[featCount];
-            for (int i = 0; i < featCount; i++)
-            {
-                OSGeo.OGR.Feature fileFeat = dzxLayer.GetFeature(i);
-                OSGeo.OGR.Geometry fileGeom = fileFeat.GetGeometryRef();
-                values[i] = fileFeat.GetFieldAsDouble("EVE");
-                fileGeom.Dispose();
-                fileFeat.Dispose();
-            }
-            // 2 求Values的平均值
-            aue = values.Average();
-
-            // 3 求values与平均值差的平方和
-            double pingFangHe = 0;
-            for (int i = 0; i < featCount; i++)
-            {
-                pingFangHe += (values[i] - aue) * (values[i] - aue);
-            }
-            // 4 每个值与平均值的差相加,除Featuer数.再开方,得到标准差
-            bzc = Math.Sqrt(pingFangHe / featCount);
-        }
-
         /// <summary>
         /// 等值线转为POLYGON
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
-        static string dzPoly(string filePath)
-        {
-            OSGeo.OGR.Ogr.RegisterAll();
-            OSGeo.OGR.Driver dr = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
-
-            string a = StaticTools.tempFilePath("shp", "等值线POLY");
-            OSGeo.OGR.DataSource newDS = dr.CreateDataSource(a, null);
-            OSGeo.OGR.Layer polyLayer = newDS.CreateLayer("", null, OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
-            OSGeo.OGR.FieldDefn fieldDf0 = new OSGeo.OGR.FieldDefn("LID", OSGeo.OGR.FieldType.OFTInteger);
-            OSGeo.OGR.FieldDefn fieldDf1 = new OSGeo.OGR.FieldDefn("EVE", OSGeo.OGR.FieldType.OFTReal);
-            polyLayer.CreateField(fieldDf0, 1);//ID
-            polyLayer.CreateField(fieldDf1, 1);//Value
-            OSGeo.OGR.FeatureDefn featDF = new OSGeo.OGR.FeatureDefn("");
-            Console.WriteLine("开始等值线转POLY！");
-            OSGeo.OGR.DataSource cleanDS = dr.Open(filePath, 0);
-            OSGeo.OGR.Layer cleanLayer = cleanDS.GetLayerByIndex(0);
-            for (int i = 0; i < cleanLayer.GetFeatureCount(0); i++)
-            {
-                OSGeo.OGR.Feature lineFeat = cleanLayer.GetFeature(i);
-                OSGeo.OGR.Geometry lineGeom = lineFeat.GetGeometryRef();
-
-                OSGeo.OGR.Feature polyFeat = new OSGeo.OGR.Feature(featDF);
-                OSGeo.OGR.Geometry polyGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbPolygon);
-                OSGeo.OGR.Geometry subGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbLinearRing);
-                int u = lineGeom.GetPointCount();
-                for (int s = 0; s < u; s++)
-                {
-                    double x = lineGeom.GetX(s);
-                    double y = lineGeom.GetY(s);
-                    double z = lineGeom.GetZ(s);
-                    subGeom.AddPoint(x, y, z);
-                }
-                polyGeom.AddGeometry(subGeom);
-                polyFeat.SetGeometry(polyGeom);
-                polyLayer.CreateFeature(polyFeat);
-                lineGeom.Dispose();
-                polyGeom.Dispose();
-                subGeom.Dispose();
-                lineFeat.Dispose();
-                polyFeat.Dispose();
-            }
-            cleanLayer.Dispose();
-            polyLayer.Dispose();
-            cleanDS.Dispose();
-            newDS.Dispose();
-            Console.WriteLine("等值线转POLY完成！");
-            return a;
-        }
-        static void dzPoly_()
+        static OSGeo.OGR.Layer dzPoly_(OSGeo.OGR.Layer cleanLayer)
         {
             //创建poly层
             OSGeo.OGR.Layer polyLayer = shpDataSet.CreateLayer("dzPoly", null, OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
@@ -356,8 +167,6 @@ namespace Test01
             polyLayer.CreateField(fieldDf1, 1);//Value
 
             OSGeo.OGR.FeatureDefn featDF = new OSGeo.OGR.FeatureDefn("");
-            Console.WriteLine("开始等值线转POLY！");
-            OSGeo.OGR.Layer cleanLayer = shpDataSet.GetLayerByName("clear");
             int ii = cleanLayer.GetFeatureCount(0);
             for (int i = 0; i < ii; i++)
             {
@@ -385,85 +194,91 @@ namespace Test01
                 polyFeat.Dispose();
             }
             cleanLayer.Dispose();
-            polyLayer.Dispose();
-            Console.WriteLine("等值线转POLY完成！");
+#if BT_Release
+            //删掉清理后的等值线 cleanLayer
+            shpDataSet.DeleteLayer(0);
+#endif
+            return polyLayer;
         }
 
         #endregion
 
         #region 坡度图
-        //获取坡度图
-        static string getPDT()
+
+        static void buildSlope()
         {
-            string _outFilePath = StaticTools.tempFilePath("img", "SolpeMap");
-            Sloping(dsmPath, _outFilePath);
-            return _outFilePath;
-        }
+            // 创建slopeMap,设置无效值
+            CreateSlopeMap(dsmPath, slopeImgSavePath);
 
-        static AutoResetEvent asyRE = new AutoResetEvent(false);
-        static OSGeo.GDAL.Dataset slopeDs;
-        static double slpNodata;
-
-        static void Sloping(string DemPath, string OutSlpPath)
-        {
-            Stopwatch sw = new Stopwatch(); sw.Start();
-            Console.WriteLine("【开始创建SlopeMap！】");
-            int hasVal;
-            double demNodata;
-            double[] geoTransform = new double[6];
-            //打开
-            OSGeo.GDAL.Dataset InDataset = OSGeo.GDAL.Gdal.Open(DemPath, OSGeo.GDAL.Access.GA_Update);
-            InDataset.GetRasterBand(1).GetNoDataValue(out demNodata, out hasVal);
-            InDataset.GetGeoTransform(geoTransform);
-
-            //调用GDal创建影像，声明影像格式
-            OSGeo.GDAL.Driver gdalDriver = OSGeo.GDAL.Gdal.GetDriverByName("HFA");
-            slopeDs = gdalDriver.Create(OutSlpPath, InDataset.RasterXSize, InDataset.RasterYSize, 1, OSGeo.GDAL.DataType.GDT_Float32, null);
-            slopeDs.SetProjection(InDataset.GetProjection());
-            slopeDs.SetGeoTransform(geoTransform);
-            if (hasVal == 0)
-            {
-                InDataset.GetRasterBand(1).SetNoDataValue(-100000);
-                slopeDs.GetRasterBand(1).SetNoDataValue(-100000);
-                slpNodata = -100000;
-            }
-            else
-            {
-                slopeDs.GetRasterBand(1).SetNoDataValue(demNodata);
-                slpNodata = demNodata;
-            }
-            InDataset.Dispose();
-
-            //asyRE = new AutoResetEvent(false);
-            //Thread th = new Thread(() =>
-            //{
-            MySloping(DemPath);
-            //});
-            //th.Start();
+            //
+            MySloping(dsmPath);
+            //AutoResetEvent asyRE = new AutoResetEvent(false);
+            //new Thread(() => { MySloping(dsmPath, asyRE); }).Start();
             //asyRE.WaitOne();
-            InDataset = OSGeo.GDAL.Gdal.Open(DemPath, OSGeo.GDAL.Access.GA_ReadOnly);
-            //FixOutLineRaster(InDataset.GetRasterBand(1), demNodata);
-            //处理外围的Raster
-            BufferOnePixel(slopeDs.GetRasterBand(1));
-            slopeDs.Dispose();
-            sw.Stop(); Console.WriteLine("【SlopeMap完成，用时：" + sw.Elapsed.ToString() + "】");
         }
-        private static async void MySloping(string DemPath)
+        /// <summary>
+        /// 创建slopeMap,设置无效值
+        /// </summary>
+        /// <param name="DemPath"></param>
+        /// <param name="OutSlpPath"></param>
+        static void CreateSlopeMap(string DemPath, string OutSlpPath)
         {
-            OSGeo.GDAL.Dataset _inDataset = OSGeo.GDAL.Gdal.Open(DemPath, OSGeo.GDAL.Access.GA_ReadOnly);
+            //打开DSM,获取属性：变换参数、是否有无效值、无效值
+            OSGeo.GDAL.Dataset dsmDataset = OSGeo.GDAL.Gdal.Open(DemPath, OSGeo.GDAL.Access.GA_Update);
+            double[] geoTransform = new double[6];
+            dsmDataset.GetGeoTransform(geoTransform);
+            OSGeo.GDAL.Band dsmBand = dsmDataset.GetRasterBand(1);
+            int hasVal; double demNodata;
+            dsmBand.GetNoDataValue(out demNodata, out hasVal);
 
-            int iCount = 0, Maxcnt = GetCutNumberOfImg(DemPath, 300, 4);
+            //调用GDal创建slope影像
+            slopeDataSet = gdalDriver.Create(OutSlpPath, dsmDataset.RasterXSize, dsmDataset.RasterYSize, 1, OSGeo.GDAL.DataType.GDT_Float32, null);
+            slopeDataSet.SetProjection(dsmDataset.GetProjection());
+            slopeDataSet.SetGeoTransform(geoTransform);
+            OSGeo.GDAL.Band slopeBand = slopeDataSet.GetRasterBand(1);
+
+            //设置无效值
+            if (hasVal == 0)            //没有无效值
+            {
+                //把DSM和SLOPE全设置成用户指定的值
+                dsmBand.SetNoDataValue(imgNodata);
+                slopeBand.SetNoDataValue(imgNodata);
+            }
+            else                        //DSM有无效值时
+            {
+                //把SLOPE和全局变量设置成DSM的无效值
+                imgNodata = demNodata;
+                slopeBand.SetNoDataValue(demNodata);
+            }
+            dsmBand.Dispose();
+            // dsmDataset.Dispose();
+            // BufferOnePixel(slopeBand);
+            slopeBand.Dispose();
+            // slopeDataSet.Dispose();
+        }
+        private static async void MySloping(string DemPath, AutoResetEvent asyRE)
+        {
+            int iCount = 0;
+            int Maxcnt = GetCutNumberOfImg();
             for (int i = 0; i < Maxcnt; i++)
             {
-
                 DemCutData data = new DemCutData(DemPath, i, 300, 300, 4);
-                //await Task.Run(() =>
-                //{
+                await Task.Run(() =>
+                {
+                    TKData(data);
+                    iCount++;
+                    if (iCount == Maxcnt)
+                        asyRE.Set();
+                });
+            }
+        }
+        private static void MySloping(string DemPath)
+        {
+            int Maxcnt = GetCutNumberOfImg();
+            for (int i = 0; i < Maxcnt; i++)
+            {
+                DemCutData data = new DemCutData(DemPath, i, 300, 300, 4);
                 TKData(data);
-                //iCount++;
-                //    if (iCount == Maxcnt)
-                //        asyRE.Set();
-                //});
             }
         }
         private static void BufferOnePixel(OSGeo.GDAL.Band TargetBand)
@@ -482,26 +297,36 @@ namespace Test01
             TargetBand.ReadRaster(TargetBand.XSize - 2, 0, 1, TargetBand.YSize, readArr, 1, TargetBand.YSize, 0, 0);
             TargetBand.WriteRaster(TargetBand.XSize - 1, 0, 1, TargetBand.YSize, readArr, 1, TargetBand.YSize, 0, 0);
         }
-        private static int GetCutNumberOfImg(string imgPath, int CutWeight, int OverlapWeight)
+        /// <summary>
+        /// 分块数量
+        /// </summary>
+        /// <param name="imgPath">DSM路径</param>
+        /// <param name="CutWeight">切块大小</param>
+        /// <param name="OverlapWeight">块重叠区</param>
+        /// <returns></returns>
+        private static int GetCutNumberOfImg()
         {
-            OSGeo.GDAL.Dataset _inDataset = OSGeo.GDAL.Gdal.Open(imgPath, OSGeo.GDAL.Access.GA_ReadOnly);
+            OSGeo.GDAL.Dataset _inDataset = OSGeo.GDAL.Gdal.Open(dsmPath, OSGeo.GDAL.Access.GA_ReadOnly);
+            int xSize = _inDataset.RasterXSize;
+            int ySize = _inDataset.RasterYSize;
+            _inDataset.Dispose();
 
-            int xTimes = (_inDataset.RasterXSize - OverlapWeight) / CutWeight;
-            int xRemainder = (_inDataset.RasterXSize - OverlapWeight) % CutWeight;
-            int yTimes = (_inDataset.RasterYSize - OverlapWeight) / CutWeight;
-            int yRemainder = (_inDataset.RasterYSize - OverlapWeight) % CutWeight;
+            int xTimes = (xSize - OverlapWeight) / CutWeight;
+            int xRemainder = (xSize - OverlapWeight) % CutWeight;
+            int yTimes = (ySize - OverlapWeight) / CutWeight;
+            int yRemainder = (ySize - OverlapWeight) % CutWeight;
+
             int ax = xTimes, by = yTimes;
             if (xTimes == 0)
-            { xRemainder = _inDataset.RasterXSize; }
+                xRemainder = xSize;
             if (yTimes == 0)
-            { yRemainder = _inDataset.RasterYSize; }
+                yRemainder = ySize;
             if (xRemainder > OverlapWeight)
                 ax++;
             if (yRemainder > OverlapWeight)
                 by++;
-            int Maxcnt = ax * by;
 
-            return Maxcnt;
+            return ax * by;
         }
         private static void TKData(object data)
         {
@@ -534,15 +359,15 @@ namespace Test01
             double[] buffer = new double[xsize * ysize];
             demDs.GetRasterBand(1).ReadRaster(x * dcData.Weight, y * dcData.High, xsize, ysize, buffer, xsize, ysize, 0, 0);
 
-            BasicUnitSlp bunitSlp = new BasicUnitSlp(x * dcData.Weight, y * dcData.High, xsize, ysize, demNodata, slpNodata, buffer, pixel_x, pixel_y);
+            BasicUnitSlp bunitSlp = new BasicUnitSlp(x * dcData.Weight, y * dcData.High, xsize, ysize, demNodata, imgNodata, buffer, pixel_x, pixel_y);
 
             double[] resArr = bunitSlp.Calculate();
-            lock (slopeDs)
+            lock (slopeDataSet)
             {
-                slopeDs.GetRasterBand(1).WriteRaster(x * dcData.Weight + 1, y * dcData.High + 1, xsize - 2, ysize - 2, resArr, xsize - 2, ysize - 2, 0, 0);
-
+                slopeDataSet.GetRasterBand(1).WriteRaster(x * dcData.Weight + 1, y * dcData.High + 1, xsize - 2, ysize - 2, resArr, xsize - 2, ysize - 2, 0, 0);
             }
         }
+
         #endregion
 
         #region 坡度线
@@ -587,7 +412,7 @@ namespace Test01
                 CutData data = new CutData(inDataPath, _outDSpath, OutShpPath, i, ImprotLevel);
                 //await Task.Run(() =>
                 //{
-                TKData(data);
+                TKDataF(data);
                 //    iCount++;
                 //    if (iCount == Maxcnt)
                 //        asyRE.Set();
@@ -620,7 +445,56 @@ namespace Test01
 
             return Maxcnt;
         }
+        private static void TKDataF(object n)
+        {
+            int hasVal;
+            double nodataV;
+            double importLevel;
+            double[] geoTansform = new double[6];
 
+            CutData cutData = (CutData)n;
+            importLevel = cutData.ImportLevel;
+            OSGeo.GDAL.Dataset demDs = OSGeo.GDAL.Gdal.Open(cutData.DemPath, OSGeo.GDAL.Access.GA_ReadOnly);
+            OSGeo.GDAL.Dataset slpDs = OSGeo.GDAL.Gdal.Open(cutData.SlopePath, OSGeo.GDAL.Access.GA_ReadOnly);
+            demDs.GetRasterBand(1).GetNoDataValue(out nodataV, out hasVal);
+            if (hasVal == 0)
+                throw new Exception("该栅格未设置Nodata！");
+            demDs.GetGeoTransform(geoTansform);
+
+            int xTimes = (demDs.RasterXSize - 300) / 500;
+            int xRemainder = (demDs.RasterXSize - 300) % 500;
+            int yTimes = (demDs.RasterYSize - 300) / 500;
+            int yRemainder = (demDs.RasterYSize - 300) % 500;
+            int ax = xTimes, by = yTimes;
+            if (xRemainder > 10)
+                ax++;
+            int x = cutData.cutIndex % ax;
+            int y = cutData.cutIndex / ax;
+            int xsize = 800, ysize = 800;
+            if (x * 500 + 800 > demDs.RasterXSize)
+                xsize = demDs.RasterXSize - x * 500;
+            if (y * 500 + 800 > demDs.RasterYSize)
+                ysize = demDs.RasterYSize - y * 500;
+
+            double[] buffer = new double[xsize * ysize];
+            double[] slopebuffer = new double[xsize * ysize];
+            demDs.GetRasterBand(1).ReadRaster(x * 500, y * 500, xsize, ysize, buffer, xsize, ysize, 0, 0);
+            slpDs.GetRasterBand(1).ReadRaster(x * 500, y * 500, xsize, ysize, slopebuffer, xsize, ysize, 0, 0);
+
+            BasicUnit bUnit = new BasicUnit(x * 500, y * 500, xsize, ysize, importLevel, buffer, slopebuffer, geoTansform, nodataV);
+
+            List<OSGeo.OGR.Geometry> geolist = bUnit.Identify2();
+            Console.WriteLine("一个图块儿计算完毕");
+            lock (qthread)
+            {
+                foreach (OSGeo.OGR.Geometry item in geolist)
+                {
+                    qthread.WritePolygonShp(item);
+                }
+            }
+            demDs.Dispose();
+            slpDs.Dispose();
+        }
 
         #endregion
 
