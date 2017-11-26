@@ -32,6 +32,7 @@ namespace Test01
             this.nodataValue = nodataValue;
             Bevisited = new bool[xsize, ysize];
         }
+        /*
         public void Identify(string polygonShpPath, string lineShpPath)
         {
             for (int _j = 0; _j < ySize; _j++)
@@ -69,6 +70,7 @@ namespace Test01
                 }
             }
         }
+        */
         public List<Geometry> Identify2()
         {
             List<Geometry> li = new List<Geometry>();
@@ -130,61 +132,7 @@ namespace Test01
             }
             return li;
         }
-
-        private void CreatePolygonShp(GeneralShp polygonShp, GeneralShp lineShp, List<OrderPoint> list, List<OrderPoint> list_unClock, OrderPoint _orStartPnt, OrderPoint _orSecondPnt)
-        {
-            if (_resPntList.Count < 1 || _resPntList_unClock.Count < 1)
-                return;
-            double _disOf2Pnt = DistanceBetweenPnts(_resPntList[_resPntList.Count - 1], _resPntList_unClock[_resPntList_unClock.Count - 1]);
-            if (_disOf2Pnt < Math.Sqrt(51) && (_resPntList.Count + _resPntList_unClock.Count) > 50)
-            {
-                //新建一个polygon对象
-                Geometry ring = new Geometry(wkbGeometryType.wkbLinearRing);
-                foreach (OrderPoint _myPoint in _resPntList_unClock)
-                {
-                    double _x = OrGeoTransform[0] + (_myPoint.X + 0.5) * OrGeoTransform[1] + (_myPoint.Y + 0.5) * OrGeoTransform[2];
-                    double _y = OrGeoTransform[3] + (_myPoint.X + 0.5) * OrGeoTransform[4] + (_myPoint.Y + 0.5) * OrGeoTransform[5];
-                    ring.AddPoint(_x, _y, 0);
-                }
-                for (int i = (_resPntList.Count - 1); i > 0; i--)
-                {
-                    double _x = OrGeoTransform[0] + (_resPntList[i].X + 0.5) * OrGeoTransform[1] + (_resPntList[i].Y + 0.5) * OrGeoTransform[2];
-                    double _y = OrGeoTransform[3] + (_resPntList[i].X + 0.5) * OrGeoTransform[4] + (_resPntList[i].Y + 0.5) * OrGeoTransform[5];
-                    ring.AddPoint(_x, _y, 0);
-                }
-                double xt = OrGeoTransform[0] + (_orSecondPnt.X + 0.5) * OrGeoTransform[1] + (_orSecondPnt.Y + 0.5) * OrGeoTransform[2];
-                double yt = OrGeoTransform[3] + (_orSecondPnt.X + 0.5) * OrGeoTransform[4] + (_orSecondPnt.Y + 0.5) * OrGeoTransform[5];
-                ring.AddPoint(xt, yt, 0);
-                xt = OrGeoTransform[0] + (_orStartPnt.X + 0.5) * OrGeoTransform[1] + (_orStartPnt.Y + 0.5) * OrGeoTransform[2];
-                yt = OrGeoTransform[3] + (_orStartPnt.X + 0.5) * OrGeoTransform[4] + (_orStartPnt.Y + 0.5) * OrGeoTransform[5];
-                ring.AddPoint(xt, yt, 0);
-                lock (polygonShp)
-                {
-                    polygonShp.InsertFeature(ring);
-                }
-            }
-            else if ((_resPntList.Count + _resPntList_unClock.Count) > 40)
-            {
-                //新建一个polyline对象
-                Geometry line = new Geometry(wkbGeometryType.wkbLineString);
-                for (int i = _resPntList.Count - 1; i > 0; i--)
-                {
-                    double _x = OrGeoTransform[0] + (_resPntList[i].X + 0.5) * OrGeoTransform[1] + (_resPntList[i].Y + 0.5) * OrGeoTransform[2];
-                    double _y = OrGeoTransform[3] + (_resPntList[i].X + 0.5) * OrGeoTransform[4] + (_resPntList[i].Y + 0.5) * OrGeoTransform[5];
-                    line.AddPoint(_x, _y, 0);
-                }
-                foreach (OrderPoint _myPoint in _resPntList_unClock)
-                {
-                    double _x = OrGeoTransform[0] + (_myPoint.X + 0.5) * OrGeoTransform[1] + (_myPoint.Y + 0.5) * OrGeoTransform[2];
-                    double _y = OrGeoTransform[3] + (_myPoint.X + 0.5) * OrGeoTransform[4] + (_myPoint.Y + 0.5) * OrGeoTransform[5];
-                    line.AddPoint(_x, _y, 0);
-                }
-                lock (lineShp)
-                {
-                    lineShp.InsertFeature(line);
-                }
-            }
-        }
+        /*
         private void WriteShp(string polygonShpPath, string lineShpPath, List<OrderPoint> list, List<OrderPoint> list_unClock, OrderPoint _orStartPnt, OrderPoint _orSecondPnt)
         {
             DataSource polygonDs = Ogr.Open(polygonShpPath, 1);
@@ -248,6 +196,7 @@ namespace Test01
             polygonDs.Dispose();
             polylineDs.Dispose();
         }
+        */
         public Geometry GetGeometry(List<OrderPoint> list, List<OrderPoint> list_unClock, OrderPoint _orStartPnt, OrderPoint _orSecondPnt)
         {
             double _disOf2Pnt = DistanceBetweenPnts(list[list.Count - 1], list_unClock[list_unClock.Count - 1]);
@@ -601,6 +550,7 @@ namespace Test01
             arr[3] = geoTransform[3] + yoff * geoTransform[5];
             return arr;
         }
+
         private double DistanceBetweenPnts(OrderPoint Point1, OrderPoint Point2)
         {
             double _dis = 0;

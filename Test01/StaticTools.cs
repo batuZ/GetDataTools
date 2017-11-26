@@ -9,12 +9,43 @@ namespace Test01
 {
     static class StaticTools
     {
+        #region GDAL/OGR 类的扩展方法
+        /// <summary>
+        /// 删除Featuer后更新Layer
+        /// </summary>
+        /// <param name="myDS"></param>
         public static void deleteFeatUpdate(this OSGeo.OGR.DataSource myDS)
         {
             string a = "REPACK " + myDS.GetLayerByIndex(0).GetName();
             myDS.ExecuteSQL(a, null, "");
             myDS.Dispose();
         }
+
+        public static bool deleteLayerByName(this OSGeo.OGR.DataSource myDS, string layerName)
+        {
+            bool isDelete = false;
+            int layerCount = myDS.GetLayerCount();
+            for (int i = 0; i < layerCount; i++)
+            {
+                OSGeo.OGR.Layer itm = myDS.GetLayerByIndex(i);
+                if (itm.GetName() == layerName)
+                {
+                    itm.Dispose();
+                    myDS.DeleteLayer(i);
+                    isDelete = true;
+                    break;
+                }
+                else
+                    itm.Dispose();
+            }
+            return isDelete;
+        }
+
+        /// <summary>
+        /// 是否被释放
+        /// </summary>
+        /// <param name="myDS"></param>
+        /// <returns></returns>
         public static bool IsDispose(this OSGeo.GDAL.Dataset myDS)
         {
             try
@@ -23,8 +54,10 @@ namespace Test01
                 return false;
             }
             catch { return true; }
-
         }
+
+
+        #endregion
         public static string tempFilePath(string format, string whatAmI = "")
         {
             if (!Directory.Exists(@"D:\TEMPFORGETDATATOOLS\"))
