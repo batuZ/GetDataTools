@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Test01
@@ -168,7 +169,7 @@ namespace Test01
         }
 
         #endregion
-        
+
         /// <summary>
         /// 判断两个Featuer是否重复，两外接矩形相同位置的边差小于1时为true
         /// </summary>
@@ -177,25 +178,29 @@ namespace Test01
         /// <returns></returns>
         public static bool isSame(OSGeo.OGR.Feature ori, OSGeo.OGR.Feature next, double maxCha = 1)
         {
-            OSGeo.OGR.Ogr.RegisterAll();
-            OSGeo.OGR.Geometry oriGeom = ori.GetGeometryRef();
             OSGeo.OGR.Envelope oriEnve = new OSGeo.OGR.Envelope();
-            oriGeom.GetEnvelope(oriEnve);
-            OSGeo.OGR.Geometry nextGeom = next.GetGeometryRef();
+            ori.GetGeometryRef().GetEnvelope(oriEnve);
             OSGeo.OGR.Envelope nextEnve = new OSGeo.OGR.Envelope();
-            nextGeom.GetEnvelope(nextEnve);
-            bool res =
-               Math.Abs(oriEnve.MaxX - nextEnve.MaxX) < maxCha && //外接矩形差
-               Math.Abs(oriEnve.MaxY - nextEnve.MaxY) < maxCha &&
-               Math.Abs(oriEnve.MinX - nextEnve.MinX) < maxCha &&
-               Math.Abs(oriEnve.MinY - nextEnve.MinY) < maxCha;
-            oriGeom.Dispose();
-            oriEnve.Dispose();
-            nextGeom.Dispose();
-            nextEnve.Dispose();
-            return res;
-        }
+            next.GetGeometryRef().GetEnvelope(nextEnve);
 
+            if (Math.Abs(oriEnve.MaxX - nextEnve.MaxX) < maxCha && //外接矩形差
+                Math.Abs(oriEnve.MaxY - nextEnve.MaxY) < maxCha &&
+                Math.Abs(oriEnve.MinX - nextEnve.MinX) < maxCha &&
+                Math.Abs(oriEnve.MinY - nextEnve.MinY) < maxCha)
+                return true;
+            else
+                return false;
+        }
+        public static bool isIntersect(OSGeo.OGR.Envelope oriEnve, OSGeo.OGR.Envelope nextEnve)
+        {
+            if (oriEnve.MaxX < nextEnve.MinX ||
+                oriEnve.MinX > nextEnve.MaxX ||
+                oriEnve.MaxY < nextEnve.MinY ||
+                oriEnve.MinY > nextEnve.MaxY)
+                return false;
+            else
+                return true;
+        }
         /// <summary>
         /// 标准差
         /// </summary>
@@ -282,5 +287,48 @@ namespace Test01
             line = (int)((y * Tran[1] - x * Tran[4] + Tran[0] * Tran[4] - Tran[3] * Tran[1]) / (Tran[5] * Tran[1] - Tran[2] * Tran[4]));
             pixel = (int)((x - Tran[0] - line * Tran[2]) / Tran[1]);
         }
+
+
+    }
+
+    class BtsThread
+    {
+        List<Thread> tasks;
+        List<Thread> subTask;
+        int counts;
+        string msg;
+        /// <summary>
+        /// 任务并行数量
+        /// </summary>
+        /// <param name="thSize"></param>
+        public BtsThread(int thSize)
+        {
+            counts = thSize;
+            tasks = new List<Thread>();
+            subTask = new List<Thread>();
+        }
+        public void GoGoGo()
+        {
+            while (subTask.Count < counts || subTask.Remove(subTask.Find(t => t.ThreadState == ThreadState.Stopped)))
+            {
+                Thread waitTask = tasks.Find(t => t.ThreadState == ThreadState.Unstarted);
+                waitTask.Start();
+                subTask.Add(waitTask);
+            }
+            waitEND();
+        }
+        public void AddTask(Thread t)
+        {
+            tasks.Add(t);
+        }
+        private void waitEND()
+        {
+            while (tasks.Exists(t => t.ThreadState == ThreadState.Unstarted || t.ThreadState == ThreadState.Running))
+            {
+                if (msg != null) Console.WriteLine(msg);
+                Thread.Sleep(1000);
+            }
+        }
+
     }
 }
