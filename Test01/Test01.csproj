@@ -63,6 +63,7 @@
     <Compile Include="BasicStruct.cs" />
     <Compile Include="BasicUnit.cs" />
     <Compile Include="BasicUnitSlp.cs" />
+    <Compile Include="minOutLine.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StaticTools.cs" />

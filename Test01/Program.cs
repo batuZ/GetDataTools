@@ -516,8 +516,8 @@ namespace Test01
                 double pdArea = pdGeom.GetArea();
                 double afterCha = -1;
                 int yesID = -1;
-                new Thread(new ThreadStart(() =>
-                {
+                //new Thread(new ThreadStart(() =>
+                //{
                     for (int dzi = 0; dzi < dzCount; dzi++)
                     {
                         OSGeo.OGR.Feature dzFeat = null;
@@ -547,14 +547,14 @@ namespace Test01
 
                     if (yesID != -1)
                         resLayer.CreateFeature(dzxPolyLayer.GetFeature(yesID));
-                    times++;
-                })).Start();
+                //        times++;
+                //    })).Start();
             }
-            while (times < pdCount)
-            {
-                Console.WriteLine("{0}/{1}", times, pdCount);
-                Thread.Sleep(1000);
-            }
+            //while (times < pdCount)
+            //{
+            //    Console.WriteLine("{0}/{1}", times, pdCount);
+            //    Thread.Sleep(1000);
+            //}
 
             if (IsDelete)
             {
@@ -806,6 +806,10 @@ namespace Test01
             double min = oriFeat.GetFieldAsDouble("MIN");
             oriFeat.SetField("HIGHT", max - min);
         }
+
+        #endregion
+
+        #region 最小外接矩形
 
         #endregion
     }

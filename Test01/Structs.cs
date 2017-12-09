@@ -102,4 +102,93 @@ namespace Test01
             return null;
         }
     }
+
+    #region for MinOutLine
+    struct Point_qt
+    {
+        public double X;
+        public double Y;
+        public double Z;
+        public double Rela_Ang;
+        public int PID;
+
+        public Point_qt(double x, double y, double z)
+        {
+            this.X = x;
+            this.Y = y;
+            this.Z = z;
+            this.Rela_Ang = 2;
+            this.PID = -1;
+        }
+        public Point_qt(double x, double y, double z, double Rela_Ang)
+        {
+            this.X = x;
+            this.Y = y;
+            this.Z = z;
+            this.Rela_Ang = Rela_Ang;
+            this.PID = -1;
+        }
+
+        public Point_qt(double Rela_Ang)
+        {
+            this.X = 0;
+            this.Y = 0;
+            this.Z = 0;
+            this.Rela_Ang = Rela_Ang;
+            this.PID = -1;
+        }
+    }
+    struct Edge_qt
+    {
+        public Point_qt FromNode;
+        public Point_qt ToNode;
+        public Point_qt minXNode;
+        public Point_qt MaxXNode;
+        public double MaxY;
+        public double minX;
+        public double MaxX;
+        public double Area_Enve;
+    }
+    class Vec2
+    {
+        public double X;
+        public double Y;
+        public double Length { get { return Math.Sqrt(X * X + Y * Y); } }
+
+        public Vec2() { }
+        public Vec2(double x, double y)
+        {
+            this.X = x;
+            this.Y = y;
+        }
+
+        public Vec2 GetCrossVec2()
+        {
+            Vec2 vec = new Vec2(Y, -X);
+            return vec;
+        }
+        public Vec2 GetUnitVec2()
+        {
+            Vec2 vec = new Vec2();
+            vec.X = this.X / this.Length;
+            vec.Y = this.Y / this.Length;
+            return vec;
+        }
+
+        public static Vec2 operator *(Vec2 lhs, double rhs)
+        {
+            Vec2 vec = new Vec2();
+            vec.X = lhs.X * rhs;
+            vec.Y = lhs.Y * rhs;
+            return vec;
+        }
+
+        public static double operator *(Vec2 lhs, Vec2 rhs)
+        {
+            double result;
+            result = lhs.X * rhs.Y - lhs.Y * rhs.X;
+            return result;
+        }
+    }
+    #endregion
 }
