@@ -72,6 +72,9 @@ namespace Test01
             OSGeo.OGR.Layer resLayer = selectFeat(slopeCleanLayer, dzxPolyLayer);
             Console.WriteLine("4完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
 
+            // 最小外接矩形
+            getMinOutLineFromLayerToLayer(resLayer);
+
             //5 简化
             jianhua(resLayer, 175, 5);
             Console.WriteLine("5完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
@@ -79,7 +82,7 @@ namespace Test01
             //6 高度值
             getH(resLayer);
             Console.WriteLine("6完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
-
+            
             shpDataSet.Dispose();
             shpDataDriver.Dispose();
             dsmDataset.Dispose();
@@ -518,35 +521,35 @@ namespace Test01
                 int yesID = -1;
                 //new Thread(new ThreadStart(() =>
                 //{
-                    for (int dzi = 0; dzi < dzCount; dzi++)
+                for (int dzi = 0; dzi < dzCount; dzi++)
+                {
+                    OSGeo.OGR.Feature dzFeat = null;
+                    lock (dzxPolyLayer)
+                        dzFeat = dzxPolyLayer.GetFeature(dzi).Clone();
+                    OSGeo.OGR.Geometry dzGeom = dzFeat.GetGeometryRef();
+                    if (pdGeom.Intersect(dzGeom))
                     {
-                        OSGeo.OGR.Feature dzFeat = null;
-                        lock (dzxPolyLayer)
-                            dzFeat = dzxPolyLayer.GetFeature(dzi).Clone();
-                        OSGeo.OGR.Geometry dzGeom = dzFeat.GetGeometryRef();
-                        if (pdGeom.Intersect(dzGeom))
+                        double cha = Math.Abs(dzGeom.GetArea() - pdArea);
+                        if (afterCha == -1)
                         {
-                            double cha = Math.Abs(dzGeom.GetArea() - pdArea);
-                            if (afterCha == -1)
-                            {
-                                afterCha = cha;
-                                yesID = dzi;
-                            }
-                            else if (cha < afterCha)
-                            {
-                                afterCha = cha;
-                                yesID = dzi;
-                            }
+                            afterCha = cha;
+                            yesID = dzi;
                         }
-                        dzGeom.Dispose();
-                        dzFeat.Dispose();
+                        else if (cha < afterCha)
+                        {
+                            afterCha = cha;
+                            yesID = dzi;
+                        }
                     }
-                    Console.WriteLine("{0}//{1}", pdi, pdCount);
-                    pdGeom.Dispose();
-                    pdFeat.Dispose();
+                    dzGeom.Dispose();
+                    dzFeat.Dispose();
+                }
+                Console.WriteLine("{0}//{1}", pdi, pdCount);
+                pdGeom.Dispose();
+                pdFeat.Dispose();
 
-                    if (yesID != -1)
-                        resLayer.CreateFeature(dzxPolyLayer.GetFeature(yesID));
+                if (yesID != -1)
+                    resLayer.CreateFeature(dzxPolyLayer.GetFeature(yesID));
                 //        times++;
                 //    })).Start();
             }
@@ -810,7 +813,21 @@ namespace Test01
         #endregion
 
         #region 最小外接矩形
-
+        static void getMinOutLineFromLayerToLayer(OSGeo.OGR.Layer inLayer)
+        {
+            shpDataSet.deleteLayerByName("minOutLine");
+            OSGeo.OGR.Layer minoutline = shpDataSet.CreateLayer("minOutLine", inLayer.GetSpatialRef(), inLayer.GetGeomType(), null);
+            OSGeo.OGR.Feature aFeat = null;
+            inLayer.ResetReading();
+            while ((aFeat = inLayer.GetNextFeature()) != null)
+            {
+                OSGeo.OGR.Geometry oGeometry = aFeat.GetGeometryRef();
+                OSGeo.OGR.Geometry ogeo = oGeometry.GetGeometryRef(0);
+                QTGeometry qtGeo = new QTGeometry(ogeo);
+                minoutline.CreateFeature(qtGeo.GetSMBR());
+            }
+            minoutline.Dispose();
+        }
         #endregion
     }
     public partial class NativeMethods
