@@ -217,9 +217,7 @@ namespace Test01
             for (int i = 0; i < featCount; i++)
             {
                 OSGeo.OGR.Feature fileFeat = dzxLayer.GetFeature(i);
-                OSGeo.OGR.Geometry fileGeom = fileFeat.GetGeometryRef();
                 values[i] = fileFeat.GetFieldAsDouble("EVE");
-                fileGeom.Dispose();
                 fileFeat.Dispose();
             }
             // 2 求Values的平均值
