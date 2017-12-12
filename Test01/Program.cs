@@ -12,7 +12,7 @@ namespace Test01
 {
     class Program
     {
-        static string dsmPath = @"C:\temp\outlinetest01.img"; //@"E:\work\C-长春\DEM\changchun_dsm05.img";               //  open
+        static string dsmPath = @"E:\work\C-长春\DEM\changchun_dsm05.img";// @"C:\temp\outlinetest01.img";                //  open
         static string shpSaveFile = @"C:\temp\asf\resClear.shp";             //  save
         static string shpSavePath = Path.GetDirectoryName(shpSaveFile);     //  C:\temp\asf\
         static string slopePath = shpSavePath + "\\a.img";                  //  C:\temp\asf\a.img
@@ -82,7 +82,7 @@ namespace Test01
             //6 高度值
             getH(resLayer);
             Console.WriteLine("6完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
-            
+
             shpDataSet.Dispose();
             shpDataDriver.Dispose();
             dsmDataset.Dispose();
@@ -544,7 +544,16 @@ namespace Test01
                     dzGeom.Dispose();
                     dzFeat.Dispose();
                 }
-                Console.WriteLine("{0}//{1}", pdi, pdCount);
+
+                string msg = $"{pdi}//{pdCount}";
+                string msgBack ="";
+                for (int i = 0; i < msg.Length; i++)
+                {
+                    msgBack += "\b";
+                }
+                Console.Write(msgBack);
+                Console.Write(msg);
+
                 pdGeom.Dispose();
                 pdFeat.Dispose();
 
