@@ -38,6 +38,13 @@ namespace Test01
 
         static void Main(string[] args)
         {
+            StaticTools.msgBack("1234");
+            StaticTools.msgBack("12345678");
+
+
+
+
+
             OSGeo.GDAL.Gdal.AllRegister();
             OSGeo.OGR.Ogr.RegisterAll();
             //shp驱动

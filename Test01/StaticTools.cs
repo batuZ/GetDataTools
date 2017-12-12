@@ -191,6 +191,7 @@ namespace Test01
             else
                 return false;
         }
+
         public static bool isIntersect(OSGeo.OGR.Envelope oriEnve, OSGeo.OGR.Envelope nextEnve)
         {
             if (oriEnve.MaxX < nextEnve.MinX ||
@@ -201,6 +202,7 @@ namespace Test01
             else
                 return true;
         }
+
         /// <summary>
         /// 标准差
         /// </summary>
@@ -286,7 +288,30 @@ namespace Test01
             pixel = (int)((x - Tran[0] - line * Tran[2]) / Tran[1]);
         }
 
-
+        /// <summary>
+        /// 退格输出
+        /// </summary>
+        private static int maxMsgCount = 0;
+        public static void msgBack(string msg)
+        {
+            maxMsgCount = maxMsgCount > msg.Length ? maxMsgCount : msg.Length;
+            Console.Write(msg + new string('\0', maxMsgCount - msg.Length));
+            Console.Write(new string('\b', maxMsgCount));
+        }
+        /// <summary>
+        /// 进度条
+        /// </summary>
+        /// <param name="p"></param>
+        public static void progress(int p, string msg = "")
+        {
+            if (p >= 0 && p <= 100)
+            {
+                Console.Write(new string('▁', 25) + $" {p} % {msg}");
+                Console.Write(new string('\b', 60 + msg.Length));
+                Console.Write(new string('█', p / 4));
+                Console.Write(new string('\b', p / 2));
+            }
+        }
     }
 
     class BtsThread
