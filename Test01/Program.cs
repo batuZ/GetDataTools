@@ -12,10 +12,11 @@ namespace Test01
 {
     class Program
     {
-        static string dsmPath = @"E:\work\C-长春\DEM\changchun_dsm05.img";// @"C:\temp\outlinetest01.img";                //  open
+        static string dsmPath = @"E:\work\C-长春\DEM\changchun_dsm05.img";// @"C:\temp\outlinetest01.img";// 
         static string shpSaveFile = @"C:\temp\asf\resClear.shp";             //  save
         static string shpSavePath = Path.GetDirectoryName(shpSaveFile);     //  C:\temp\asf\
         static string slopePath = shpSavePath + "\\a.img";                  //  C:\temp\asf\a.img
+
         static OSGeo.OGR.DataSource shpDataSet;             //shp文件集合DIR
         static OSGeo.GDAL.Driver gdalDriver;                //IMG文件驱动
         static OSGeo.GDAL.Dataset dsmDataset;               //dsmDataSet;
@@ -28,7 +29,7 @@ namespace Test01
         static double maxLength = 2600;                     //清理等值线的最大长度
         static double sec = 2;                              //2倍的标准差;1倍为68.2%;2倍为95.4%;3倍为99.8%;正态分布
         static double imgNodata = -100000;                  //dsm和slope的无效值
-        static int CutWeight = 300;                         //slope子图大小，影响计算效率
+        static int CutWeight = 1000;                         //slope子图大小，影响计算效率
         static int OverlapWeight = 4;                       //slope子图重叠区
         static double ImprotLevel;                          //slopeLineAnge
         static bool IsDelete = true;
@@ -38,12 +39,6 @@ namespace Test01
 
         static void Main(string[] args)
         {
-            StaticTools.msgBack("1234");
-            StaticTools.msgBack("12345678");
-
-
-
-
 
             OSGeo.GDAL.Gdal.AllRegister();
             OSGeo.OGR.Ogr.RegisterAll();
@@ -63,32 +58,32 @@ namespace Test01
             Stopwatch aTime = new Stopwatch(); aTime.Start();
 
             //1 坡度图
-            buildSlope();
-
-            Console.WriteLine("1完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
+            //buildSlope();
+            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             //2 坡度线
-            OSGeo.OGR.Layer slopeCleanLayer = cleanLayer(getPDX(1), false, 200);
-            Console.WriteLine("2完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
+            //OSGeo.OGR.Layer slopeCleanLayer = cleanLayer(getPDX(1), false, 200);
+            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             //3 等高线
-            OSGeo.OGR.Layer dzxPolyLayer = dzPoly_(cleanDS_(getDZX_()));
-            Console.WriteLine("3完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
+            //cleanDZX_BF(shpDataSet.GetLayerByName("dzx"));
+            //OSGeo.OGR.Layer dzxPolyLayer = cleanDZX_BF(getDZX_());
+            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             //4 筛选
-            OSGeo.OGR.Layer resLayer = selectFeat(slopeCleanLayer, dzxPolyLayer);
-            Console.WriteLine("4完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
+            //OSGeo.OGR.Layer resLayer = selectFeat(slopeCleanLayer, dzxPolyLayer);
+            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             // 最小外接矩形
-            getMinOutLineFromLayerToLayer(resLayer);
+            //getMinOutLineFromLayerToLayer(resLayer);
 
             //5 简化
-            jianhua(resLayer, 175, 5);
-            Console.WriteLine("5完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
+            //jianhua(resLayer, 175, 5);
+            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
-            //6 高度值
-            getH(resLayer);
-            Console.WriteLine("6完成！用时：{0}", aTime.Elapsed.ToString()); aTime.Restart();
+            //6 高度值 未完成
+            //getH(resLayer);
+            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             shpDataSet.Dispose();
             shpDataDriver.Dispose();
@@ -96,6 +91,8 @@ namespace Test01
             gdalDriver.Dispose();
 
             aTime.Stop();
+            Console.Write("Press any key to continue . . . ");
+            Console.ReadKey(true);
         }
 
         #region 等高线
@@ -105,6 +102,7 @@ namespace Test01
         /// <returns></returns>
         static OSGeo.OGR.Layer getDZX_()
         {
+            StaticTools.msgLine("createDZX...");
             //分析数据源
             double noDataValue;                 //无效值
             int hasDataValue;                   //0不使用无效值,1使用无效值
@@ -147,11 +145,11 @@ namespace Test01
         /// </summary>
         /// <param name="dzx"></param>
         /// <returns></returns>
-        static OSGeo.OGR.Layer cleanDS_(OSGeo.OGR.Layer dzxLayer)
+        static OSGeo.OGR.Layer cleanDZX(OSGeo.OGR.Layer dzxLayer)
         {
-            //new a shp
-            shpDataSet.deleteLayerByName("dzx1");
-            OSGeo.OGR.Layer newdzxLayer = shpDataSet.CreateLayer("dzx1", dzxLayer.GetSpatialRef(), dzxLayer.GetGeomType(), null);
+            //创建poly层
+            shpDataSet.deleteLayerByName("dzPoly");
+            OSGeo.OGR.Layer newdzxLayer = shpDataSet.CreateLayer("dzPoly", dzxLayer.GetSpatialRef(), OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
 
             //aue平均值，bzc标准差
             double aue, bzc;
@@ -160,6 +158,7 @@ namespace Test01
             double minValue = aue - bzc * sec;
             double maxValue = aue + bzc * sec;
             int FeatureCount = dzxLayer.GetFeatureCount(0);
+            StaticTools.msgLine("cleanDZX...");
             for (int i = 0; i < FeatureCount; i++)
             {
                 OSGeo.OGR.Feature fileFeat = dzxLayer.GetFeature(i);
@@ -174,61 +173,93 @@ namespace Test01
                 bool isR = fileGeom.IsRing();
                 if (s1 && s2 && isR)
                 {
-                    newdzxLayer.CreateFeature(fileFeat);
+                    OSGeo.OGR.Feature newFeat = polyFeat(fileFeat);
+                    newdzxLayer.CreateFeature(newFeat);
+                    newFeat.Dispose();
                 }
                 fileFeat.Dispose();
+                StaticTools.progress((i + 1) * 100 / FeatureCount, $"{i} / {FeatureCount}");
             }
             if (IsDelete)
                 //删掉未清理的等值线 dzxLayer
                 shpDataSet.deleteLayerByName(dzxLayer.GetName());
 
-            if (newdzxLayer.GetFeatureCount(0) > 0)
-                return newdzxLayer;
-            else
-                return null;
+            return newdzxLayer;
         }
         /// <summary>
-        /// 等值线转为POLYGON
+        /// 并发
         /// </summary>
-        /// <param name="filePath"></param>
+        /// <param name="dzxLayer"></param>
         /// <returns></returns>
-        static OSGeo.OGR.Layer dzPoly_(OSGeo.OGR.Layer cleanLayer)
+        static OSGeo.OGR.Layer cleanDZX_BF(OSGeo.OGR.Layer dzxLayer)
         {
             //创建poly层
             shpDataSet.deleteLayerByName("dzPoly");
-            OSGeo.OGR.Layer dzxPolyLayer = shpDataSet.CreateLayer("dzPoly", cleanLayer.GetSpatialRef(), OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
+            OSGeo.OGR.Layer newdzxLayer = shpDataSet.CreateLayer("dzPoly", dzxLayer.GetSpatialRef(), OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
 
-            int ii = cleanLayer.GetFeatureCount(0);
-            for (int i = 0; i < ii; i++)
+            //aue平均值，bzc标准差
+            double aue, bzc;
+            StaticTools.getBZC(dzxLayer, out aue, out bzc);
+            //清理过大和过小的高度值，取值范围为平均值两则，2倍的标准差，约为95.4%
+            double minValue = aue - bzc * sec;
+            double maxValue = aue + bzc * sec;
+            int FeatureCount = dzxLayer.GetFeatureCount(0);
+            StaticTools.msgLine("cleanDZX...");
+            int s = 1;
+            for (int i = 0; i < FeatureCount; i++)
             {
-                OSGeo.OGR.Feature lineFeat = cleanLayer.GetFeature(i);
-                OSGeo.OGR.Geometry lineGeom = lineFeat.GetGeometryRef();
-
-                OSGeo.OGR.Feature polyFeat = new OSGeo.OGR.Feature(new OSGeo.OGR.FeatureDefn(""));
-                OSGeo.OGR.Geometry polyGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbPolygon);
-                OSGeo.OGR.Geometry subGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbLinearRing);
-                int u = lineGeom.GetPointCount();
-                for (int s = 0; s < u; s++)
+                new Thread(new ThreadStart(() =>
                 {
-                    double x = lineGeom.GetX(s);
-                    double y = lineGeom.GetY(s);
-                    double z = lineGeom.GetZ(s);
-                    subGeom.AddPoint(x, y, z);
-                }
-                polyGeom.AddGeometry(subGeom);
-                polyFeat.SetGeometry(polyGeom);
-                dzxPolyLayer.CreateFeature(polyFeat);
-                lineGeom.Dispose();
-                polyGeom.Dispose();
-                subGeom.Dispose();
-                lineFeat.Dispose();
-                polyFeat.Dispose();
-            }
-            if (IsDelete)
-                //删掉清理后的等值线 cleanLayer
-                shpDataSet.deleteLayerByName(cleanLayer.GetName());
+                    OSGeo.OGR.Feature fileFeat = dzxLayer.GetFeature(i);
+                    OSGeo.OGR.Geometry fileGeom = fileFeat.GetGeometryRef();
 
-            return dzxPolyLayer;
+                    if (fileGeom.IsRing()//判断闭合
+                        && fileFeat.GetFieldAsDouble("EVE") > minValue
+                        && fileFeat.GetFieldAsDouble("EVE") < maxValue //判断值
+                        && fileGeom.Length() > minLength
+                        && fileGeom.Length() < maxLength) //判断长度
+                    {
+                        OSGeo.OGR.Feature newFeat = polyFeat(fileFeat);
+                        newdzxLayer.CreateFeature(newFeat);
+                        newFeat.Dispose();
+                    }
+
+                    s++;
+                })).Start();
+            }
+            while (s < FeatureCount)
+            {
+                StaticTools.msgBack(s.ToString());
+                Thread.Sleep(1);
+            }
+
+            if (IsDelete)
+                //删掉未清理的等值线 dzxLayer
+                shpDataSet.deleteLayerByName(dzxLayer.GetName());
+
+            return newdzxLayer;
+        }
+
+        static OSGeo.OGR.Feature polyFeat(OSGeo.OGR.Feature lineFeat)
+        {
+            OSGeo.OGR.Geometry lineGeom = lineFeat.GetGeometryRef();
+            OSGeo.OGR.Feature polyFeat = new OSGeo.OGR.Feature(new OSGeo.OGR.FeatureDefn(""));
+            OSGeo.OGR.Geometry polyGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbPolygon);
+            OSGeo.OGR.Geometry subGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbLinearRing);
+            int u = lineGeom.GetPointCount();
+            for (int s = 0; s < u; s++)
+            {
+                double x = lineGeom.GetX(s);
+                double y = lineGeom.GetY(s);
+                double z = lineGeom.GetZ(s);
+                subGeom.AddPoint(x, y, z);
+            }
+            polyGeom.AddGeometry(subGeom);
+            polyFeat.SetGeometry(polyGeom);
+            lineGeom.Dispose();
+            polyGeom.Dispose();
+            subGeom.Dispose();
+            return polyFeat;
         }
 
         #endregion
@@ -242,8 +273,12 @@ namespace Test01
 
             //Sloping
             int Maxcnt = GetCutNumberOfImg();
+            StaticTools.msgLine("createSlopeMap...");
             for (int i = 0; i < Maxcnt; i++)
+            {
                 TKData_(i);
+                StaticTools.progress((i + 1) * 100 / Maxcnt, $"{i + 1} / {Maxcnt}");
+            }
         }
         /// <summary>
         /// 创建slopeMap,设置无效值
@@ -368,6 +403,7 @@ namespace Test01
             //获取分块数量
             int Maxcnt = GetCutNumberOfImg("");
             //开始计算
+            StaticTools.msgLine("createSlopeLine...");
             for (int i = 0; i < Lev; i++)
             {
                 //坡度阈值，每次变化得到的内容有所不同，最后合在一个polygon中
@@ -375,7 +411,8 @@ namespace Test01
                 for (int ii = 0; ii < Maxcnt; ii++)
                 {
                     TKDataF(slopePolyLayer, ii);
-                    Console.WriteLine("pdx:{0}/{1}on{2}/{3}", ii, Maxcnt, i, Lev);
+                    StaticTools.progress((ii + 1) * (i + 1) * 100 / (Lev * Maxcnt),
+                        string.Format("{0}/{1}on{2}/{3}", ii, Maxcnt, i, Lev));
                 }
             }
             slopeDataSet.Dispose();
@@ -466,7 +503,7 @@ namespace Test01
             string newLayerName = oldLayerName + "Clear";
             shpDataSet.deleteLayerByName(newLayerName);
             OSGeo.OGR.Layer outLayer = shpDataSet.CreateLayer(newLayerName, inLayer.GetSpatialRef(), inLayer.GetGeomType(), null);
-
+            StaticTools.msgLine("clean SlopeLine...");
             int featCount = inLayer.GetFeatureCount(0);
             for (int i = 0; i < featCount - 1; i++)
             {
@@ -499,7 +536,7 @@ namespace Test01
                     if (isOnly)
                         outLayer.CreateFeature(ori);
                     ori.Dispose();
-                    Console.WriteLine("{0}/{1}", i, featCount);
+                    StaticTools.progress((i + 2) * 100 / featCount, $"{i + 1} / {featCount}");
                 }
             }
             if (IsDelete)
@@ -514,7 +551,7 @@ namespace Test01
         {
             shpDataSet.deleteLayerByName("res");
             OSGeo.OGR.Layer resLayer = shpDataSet.CreateLayer("res", null, OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
-
+            StaticTools.msgLine("selection...");
             int pdCount = slopePolyLayer.GetFeatureCount(0);
             int dzCount = dzxPolyLayer.GetFeatureCount(0);
             int times = 0;
@@ -551,15 +588,7 @@ namespace Test01
                     dzGeom.Dispose();
                     dzFeat.Dispose();
                 }
-
-                string msg = $"{pdi}//{pdCount}";
-                string msgBack ="";
-                for (int i = 0; i < msg.Length; i++)
-                {
-                    msgBack += "\b";
-                }
-                Console.Write(msgBack);
-                Console.Write(msg);
+                StaticTools.progress((pdi + 1) * 100 / pdCount, $"{pdi}//{pdCount}");
 
                 pdGeom.Dispose();
                 pdFeat.Dispose();
@@ -592,12 +621,16 @@ namespace Test01
         /// <param name="cishu"></param>
         private static void jianhua(OSGeo.OGR.Layer resLayer, double jiaodu, int cishu)
         {
+            StaticTools.msgLine("huajian...");
             for (int i = cishu; i > 0; i--)
+            {
                 resLayer.claenPoint(jiaodu, i);
+                StaticTools.progress((cishu - i + 1) * 100 / cishu);
+            }
         }
         #endregion
 
-        #region 获取高度值
+        #region 获取高度值 未完成
         private static void getH(OSGeo.OGR.Layer oriLayer)
         {
             //创建一个BUFFER，BUFFER距离为1米
@@ -631,17 +664,20 @@ namespace Test01
             dsmDataset.GetGeoTransform(transfrom);
             int allX = dsmDataset.RasterXSize;
             int allY = dsmDataset.RasterYSize;
-
+            StaticTools.msgLine("getH...");
             //开始计算每个Feature需要读取的栅格参数
             int featCount = oriLayer.GetFeatureCount(0);
             for (int i = 0; i < featCount; i++)
             {
-                int[] subRasterOff_Size = subRasterInfo(transfrom, allX, allY, bufLayer.GetFeature(i));
+
                 OSGeo.OGR.Feature oriFeat = oriLayer.GetFeature(i);
                 OSGeo.OGR.Feature bufFeat = bufLayer.GetFeature(i);
-                getMaxMinValue(dsmDataset, oriFeat, bufFeat, subRasterOff_Size);
+                int[] subRasterOff_Size = subRasterInfo(transfrom, allX, allY, bufFeat);
+                //  getMaxMinValue(dsmDataset, oriFeat, bufFeat, subRasterOff_Size);
                 oriLayer.SetFeature(oriFeat);
                 oriFeat.Dispose();
+                bufFeat.Dispose();
+                StaticTools.progress((i + 1) * 100 / featCount, $"{i} / {featCount}");
             }
             if (IsDelete)
                 shpDataSet.deleteLayerByName(bufLayer.GetName());
@@ -720,7 +756,7 @@ namespace Test01
             return a;
         }
         /// <summary>
-        /// 获取Feature的最大值和最小值
+        /// 获取Feature的最大值和最小值 范围不准
         /// </summary>
         /// <param name="dsmDs"></param>
         /// <param name="oriFeat"></param>
@@ -732,7 +768,9 @@ namespace Test01
             double[] rastValue = new double[subRasterOff_Size[2] * subRasterOff_Size[3]];
 
             //把SUBimg的值读进数组
-            dsmDs.GetRasterBand(1).ReadRaster(
+            lock (dsmDs)
+            {
+                dsmDs.GetRasterBand(1).ReadRaster(
                 subRasterOff_Size[0],
                 subRasterOff_Size[1],
                 subRasterOff_Size[2],
@@ -741,6 +779,7 @@ namespace Test01
                 subRasterOff_Size[2],
                 subRasterOff_Size[3],
                 0, 0);
+            }
             double max = rastValue.Max();
             double min = rastValue.Min();
             double cay = max - min;
@@ -750,6 +789,13 @@ namespace Test01
             oriFeat.SetField("MAX", min);
             oriFeat.SetField("HIGHT", max);
         }
+        /// <summary>
+        /// 以前的代码
+        /// </summary>
+        /// <param name="dsmDs"></param>
+        /// <param name="oriFeat"></param>
+        /// <param name="bufFeat"></param>
+        /// <param name="subRasterOff_Size"></param>
         private static void getMaxMinValue_(OSGeo.GDAL.Dataset dsmDs, OSGeo.OGR.Feature oriFeat, OSGeo.OGR.Feature bufFeat, int[] subRasterOff_Size)
         {
             //拿到当前Feature对应的栅格值（数组）
@@ -834,15 +880,28 @@ namespace Test01
             shpDataSet.deleteLayerByName("minOutLine");
             OSGeo.OGR.Layer minoutline = shpDataSet.CreateLayer("minOutLine", inLayer.GetSpatialRef(), inLayer.GetGeomType(), null);
             OSGeo.OGR.Feature aFeat = null;
-            inLayer.ResetReading();
-            while ((aFeat = inLayer.GetNextFeature()) != null)
+
+            StaticTools.msgLine("getMinOutline...");
+            int featCount = inLayer.GetFeatureCount(0);
+            for (int i = 0; i < featCount; i++)
             {
+                aFeat = inLayer.GetFeature(i);
                 OSGeo.OGR.Geometry oGeometry = aFeat.GetGeometryRef();
                 OSGeo.OGR.Geometry ogeo = oGeometry.GetGeometryRef(0);
                 QTGeometry qtGeo = new QTGeometry(ogeo);
                 minoutline.CreateFeature(qtGeo.GetSMBR());
+                StaticTools.progress((i + 1) * 100 / featCount, $"{i} / {featCount}");
             }
             minoutline.Dispose();
+            //inLayer.ResetReading();
+            //while ((aFeat = inLayer.GetNextFeature()) != null)
+            //{
+            //    OSGeo.OGR.Geometry oGeometry = aFeat.GetGeometryRef();
+            //    OSGeo.OGR.Geometry ogeo = oGeometry.GetGeometryRef(0);
+            //    QTGeometry qtGeo = new QTGeometry(ogeo);
+            //    minoutline.CreateFeature(qtGeo.GetSMBR());
+            //}
+
         }
         #endregion
     }

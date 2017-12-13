@@ -287,7 +287,10 @@ namespace Test01
             line = (int)((y * Tran[1] - x * Tran[4] + Tran[0] * Tran[4] - Tran[3] * Tran[1]) / (Tran[5] * Tran[1] - Tran[2] * Tran[4]));
             pixel = (int)((x - Tran[0] - line * Tran[2]) / Tran[1]);
         }
-
+        public static void msgLine(string msg)
+        {
+            Console.WriteLine(msg);
+        }
         /// <summary>
         /// 退格输出
         /// </summary>
@@ -310,6 +313,7 @@ namespace Test01
                 Console.Write(new string('\b', 60 + msg.Length));
                 Console.Write(new string('█', p / 4));
                 Console.Write(new string('\b', p / 2));
+                if (p == 100) Console.Write('\n');
             }
         }
     }
