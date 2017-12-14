@@ -12,8 +12,8 @@ namespace Test01
 {
     class Program
     {
-        static string dsmPath = @"E:\work\C-长春\DEM\changchun_dsm05.img";// @"C:\temp\outlinetest01.img";// 
-        static string shpSaveFile = @"C:\temp\asf\resClear.shp";             //  save
+        static string dsmPath = @"E:\work\C-长春\DEM\changchun_dsm05.img";// @"D:\temp\outlinetest01.img";// 
+        static string shpSaveFile = @"D:\temp\asf\resClear.shp";             //  save
         static string shpSavePath = Path.GetDirectoryName(shpSaveFile);     //  C:\temp\asf\
         static string slopePath = shpSavePath + "\\a.img";                  //  C:\temp\asf\a.img
 
@@ -60,28 +60,34 @@ namespace Test01
             Stopwatch aTime = new Stopwatch(); aTime.Start();
 
             //1 坡度图
-            //buildSlope();
-            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
+            buildSlope();
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             //2 坡度线
-            OSGeo.OGR.Layer slopeCleanLayer = cleanLayer(getPDX(1), true, 200);
-            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
+            OSGeo.OGR.Layer pdx = getPDX(1);
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
+            OSGeo.OGR.Layer slopeCleanLayer = cleanLayer(pdx, 200, 5000);
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             //3 等高线
-            //cleanDZX_BF(shpDataSet.GetLayerByName("dzx"));
-            //OSGeo.OGR.Layer dzxPolyLayer = cleanDZX(getDZX_());
-            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
+            OSGeo.OGR.Layer dzx = getDZX_();
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
+            OSGeo.OGR.Layer dzxPolyLayer = cleanDZX(dzx);
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             //4 筛选
-            //OSGeo.OGR.Layer resLayer = selectFeat(slopeCleanLayer, dzxPolyLayer);
-            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
+            OSGeo.OGR.Layer selectLayer = selectionFeatuers(slopeCleanLayer, dzxPolyLayer);
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
+            OSGeo.OGR.Layer resLayer = cleanLayer_FF(selectLayer);
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             // 最小外接矩形
-            //getMinOutLineFromLayerToLayer(resLayer);
+            getMinOutLineFromLayerToLayer(resLayer);
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             //5 简化
-            //jianhua(resLayer, 175, 5);
-            //StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
+            jianhua(resLayer, 175, 5);
+            StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
 
             //6 高度值 未完成
             //getH(resLayer);
@@ -92,7 +98,7 @@ namespace Test01
             dsmDataset.Dispose();
             gdalDriver.Dispose();
 
-            aTime.Stop();
+            //   aTime.Stop();
             Console.Write("Press any key to continue . . . ");
             Console.ReadKey(true);
         }
@@ -174,12 +180,10 @@ namespace Test01
                 {
                     OSGeo.OGR.Feature newFeat = polyFeat(fileGeom);
                     newdzxLayer.CreateFeature(newFeat);
-                    newFeat.Dispose();
+                    StaticTools.progress((i + 1) * 100 / FeatureCount, $"{i} / {FeatureCount}");
                 }
-
-                fileFeat.Dispose();
-                StaticTools.progress((i + 1) * 100 / FeatureCount, $"{i} / {FeatureCount}");
             }
+            StaticTools.progress(100);
             if (IsDelete)
                 shpDataSet.deleteLayerByName(dzxLayer.GetName());
 
@@ -428,11 +432,229 @@ namespace Test01
         /// <summary>
         /// 清理Layer中重复的，面积过小的featuer,返回一个新的Layer
         /// </summary>
+        /// <param name="pdLayer">源layer</param>
+        /// <param name="andArea">是否判断最小面积</param>
+        /// <param name="minArea">最小面积</param>
+        /// <returns></returns>
+        public static OSGeo.OGR.Layer cleanLayer(OSGeo.OGR.Layer pdLayer, double minArea, double maxArea, double maxCha = 1)
+        {
+            shpDataSet.deleteLayerByName("pdClear");
+            OSGeo.OGR.Layer outLayer = shpDataSet.CreateLayer("pdClear", pdLayer.GetSpatialRef(), pdLayer.GetGeomType(), null);
+            OSGeo.OGR.Envelope oriEnve = new OSGeo.OGR.Envelope();
+            OSGeo.OGR.Envelope nextEnve = new OSGeo.OGR.Envelope();
+            StaticTools.msgLine("clean SlopeLine...");
+            int featCount = pdLayer.GetFeatureCount(0);
+            for (int i = 0; i < featCount - 1; i++)
+            {
+                bool isOnly = true;
+                OSGeo.OGR.Feature ori = pdLayer.GetFeature(i);
+                double oriArea = ori.GetGeometryRef().GetArea();
+
+                if (oriArea < minArea || oriArea > maxArea)
+                {
+                    //判断当前要素的面积，过小或过大时，认为其有相同的图形，不加入新的Layer
+                    isOnly = false;
+                }
+                else
+                {
+                    //判断当前要素与其它要素的包围盒的对应边，差值都小于阈值时，认为是相同的图形，需要跳过
+                    //没有相同的图型时，isOnly为true ，塞到新的layer里
+                    ori.GetGeometryRef().GetEnvelope(oriEnve);
+                    for (int j = i + 1; j < featCount; j++)
+                    {
+                        pdLayer.GetFeature(j).GetGeometryRef().GetEnvelope(nextEnve);
+                        if (Math.Abs(oriEnve.MaxX - nextEnve.MaxX) < maxCha &&
+                            Math.Abs(oriEnve.MaxY - nextEnve.MaxY) < maxCha &&
+                            Math.Abs(oriEnve.MinX - nextEnve.MinX) < maxCha &&
+                            Math.Abs(oriEnve.MinY - nextEnve.MinY) < maxCha)
+                        {
+                            isOnly = false;
+                            break;
+                        }
+                    }
+                }
+                if (isOnly)
+                    outLayer.CreateFeature(ori);
+                StaticTools.progress((i + 2) * 100 / featCount, $"{i + 1} / {featCount}");
+            }
+            if (IsDelete)
+                shpDataSet.deleteLayerByName(pdLayer.GetName());
+
+            return outLayer;
+        }
+        #endregion
+
+        #region 筛选
+        /// <summary>
+        /// 通过slope的位置和面积筛选dzxPoly
+        /// </summary>
+        /// <param name="slopePolyLayer"></param>
+        /// <param name="dzxPolyLayer"></param>
+        /// <returns></returns>
+        static OSGeo.OGR.Layer selectionFeatuers(OSGeo.OGR.Layer slopePolyLayer, OSGeo.OGR.Layer dzxPolyLayer)
+        {
+            shpDataSet.deleteLayerByName("resLayer");
+            OSGeo.OGR.Layer resLayer = shpDataSet.CreateLayer("resLayer", srs, dzxPolyLayer.GetGeomType(), null);
+
+            List<CutBox> selectTree = buildTree(slopePolyLayer, dzxPolyLayer);
+
+            StaticTools.msgLine("selection...");
+
+            for (int i = 0; i < selectTree.Count; i++)
+            {
+                CutBox abox = selectTree[i];
+
+                for (int pdi = 0; pdi < abox.pdxIDs.Count; pdi++)
+                {
+                    int ff = abox.pdxIDs[pdi];
+                    OSGeo.OGR.Geometry pdGeom = slopePolyLayer.GetFeature(ff).GetGeometryRef();
+                    double pdArea = pdGeom.GetArea();
+                    double afterCha = double.MaxValue;
+                    int yesID = -1;
+
+                    for (int dzi = 0; dzi < abox.dzxIDs.Count; dzi++)
+                    {
+                        int tt = abox.dzxIDs[dzi];
+                        OSGeo.OGR.Geometry dzGeom = dzxPolyLayer.GetFeature(tt).GetGeometryRef();
+                        if (pdGeom.Intersect(dzGeom))
+                        {
+                            double cha = Math.Abs(dzGeom.GetArea() - pdArea);
+                            if (cha < afterCha)
+                            {
+                                afterCha = cha;
+                                yesID = tt;
+                            }
+                        }
+                    }
+
+                    if (yesID != -1)
+                        resLayer.CreateFeature(dzxPolyLayer.GetFeature(yesID));
+                    StaticTools.progress((pdi + 1) * 100 / abox.pdxIDs.Count, $"{pdi}/{abox.pdxIDs.Count} @ {i + 1} / {selectTree.Count}");
+                }
+            }
+            if (IsDelete)
+            {
+                shpDataSet.deleteLayerByName(slopePolyLayer.GetName());
+                shpDataSet.deleteLayerByName(dzxPolyLayer.GetName());
+            }
+            return resLayer;
+        }
+        /// <summary>
+        /// 根据区块范围，获取对应的pdx,dzx
+        /// </summary>
+        /// <param name="pdLayer"></param>
+        /// <param name="dzxlayer"></param>
+        /// <returns></returns>
+        static List<CutBox> buildTree(OSGeo.OGR.Layer pdLayer, OSGeo.OGR.Layer dzxlayer)
+        {
+            StaticTools.msgLine("buildTree...");
+            OSGeo.OGR.Layer cutLayer = createCutLayer(3000);
+
+            int cutFeatCount = cutLayer.GetFeatureCount(0);
+            int pdFeatCount = pdLayer.GetFeatureCount(0);
+            int dzFeatCount = dzxlayer.GetFeatureCount(0);
+
+            //用 cutLayer 中的 Featuers 创建一个容器,容器中是对应 Featuer 的 cutBox
+            List<CutBox> allBoxes = new List<CutBox>();
+            for (int cuti = 0; cuti < cutFeatCount; cuti++)
+            {
+                CutBox cb = new CutBox();
+                //把与盒子相交的等值线塞入盒子,向外Buffer一定距离，避免尴尬
+                OSGeo.OGR.Geometry cutGeom = cutLayer.GetFeature(cuti).GetGeometryRef().Buffer(5, 0);
+                for (int dzi = 0; dzi < dzFeatCount; dzi++)
+                    if (cutGeom.Intersect(dzxlayer.GetFeature(dzi).GetGeometryRef()))
+                        cb.dzxIDs.Add(dzi);
+                allBoxes.Add(cb);
+                StaticTools.progress((cuti + 1) * 100 / cutFeatCount, $"{cuti}/{cutFeatCount}");
+            }
+
+            //遍历坡度线，放入对应的cutBox
+            //不会重复，要素只会放入第一个匹配上的盒子里
+            for (int pdi = 0; pdi < pdFeatCount; pdi++)
+            {
+                //拿出一个坡度要素
+                OSGeo.OGR.Geometry aGeom = pdLayer.GetFeature(pdi).GetGeometryRef();
+                for (int cuti = 0; cuti < cutFeatCount; cuti++)
+                {
+                    //拿出一个盒子，与要素求交
+                    OSGeo.OGR.Geometry cutGeom = cutLayer.GetFeature(cuti).GetGeometryRef();
+                    if (aGeom.Intersects(cutGeom))
+                    {
+                        //塞入盒子,盒子ID ，坡度线ID
+                        allBoxes[cuti].pdxIDs.Add(pdi);
+                        break;
+                    }
+                }
+                StaticTools.progress((pdi + 1) * 100 / pdFeatCount, $"{pdi}/{pdFeatCount}");
+            }
+            if (IsDelete)
+                shpDataSet.deleteLayerByName(cutLayer.GetName());
+
+            return allBoxes;
+        }
+        /// <summary>
+        /// 根据dsm的坐标划分区域
+        /// </summary>
+        /// <param name="tileSize">区块尺寸</param>
+        /// <returns></returns>
+        static OSGeo.OGR.Layer createCutLayer(double tileSize)
+        {
+            shpDataSet.deleteLayerByName("cutLayer");
+            OSGeo.OGR.Layer cutLayer = shpDataSet.CreateLayer("cutLayer", srs, OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
+            double[] trans = new double[6];
+            dsmDataset.GetGeoTransform(trans);
+            //四边坐标
+            double top = trans[3];
+            double left = trans[0];
+            double right = trans[0] + dsmDataset.RasterXSize * trans[1];
+            double bottom = trans[3] + dsmDataset.RasterYSize * trans[5];
+            //子块角点
+            Point LB, LT, RT, RB;
+
+            //横竖块数
+            int hCount = (int)((top - bottom) / tileSize) + 1;
+            int wCount = (int)((right - left) / tileSize) + 1;
+            for (int h = 0; h < hCount; h++)
+            {
+                for (int w = 0; w < wCount; w++)
+                {
+                    OSGeo.OGR.Geometry subCutGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbLinearRing);
+
+                    LB.X = left + tileSize * w;
+                    LB.Y = bottom + tileSize * h;
+                    subCutGeom.AddPoint(LB.X, LB.Y, 0);
+
+                    LT.X = LB.X;
+                    LT.Y = LB.Y + tileSize;
+                    subCutGeom.AddPoint(LT.X, LT.Y, 0);
+
+                    RT.X = LB.X + tileSize;
+                    RT.Y = LT.Y;
+                    subCutGeom.AddPoint(RT.X, RT.Y, 0);
+
+                    RB.X = RT.X;
+                    RB.Y = LB.Y;
+                    subCutGeom.AddPoint(RB.X, RB.Y, 0);
+                    //封闭poly
+                    subCutGeom.AddPoint(LB.X, LB.Y, 0);
+                    
+                    OSGeo.OGR.Geometry cutGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbPolygon);
+                    cutGeom.AddGeometry(subCutGeom);
+                    OSGeo.OGR.Feature cutFeat = new OSGeo.OGR.Feature(new OSGeo.OGR.FeatureDefn(""));
+                    cutFeat.SetGeometry(cutGeom);
+                    cutLayer.CreateFeature(cutFeat);
+                }
+            }
+            return cutLayer;
+        }
+        /// <summary>
+        /// 清理Layer中重复的，面积过小的featuer,返回一个新的Layer
+        /// </summary>
         /// <param name="inLayer">源layer</param>
         /// <param name="andArea">是否判断最小面积</param>
         /// <param name="minArea">最小面积</param>
         /// <returns></returns>
-        public static OSGeo.OGR.Layer cleanLayer(OSGeo.OGR.Layer inLayer, bool andArea = false, double minArea = 0)
+        public static OSGeo.OGR.Layer cleanLayer_FF(OSGeo.OGR.Layer inLayer, bool andArea = false, double minArea = 0)
         {
             string oldLayerName = inLayer.GetName();
             string newLayerName = oldLayerName + "Clear";
@@ -479,120 +701,7 @@ namespace Test01
 
             return outLayer;
         }
-        #endregion
-
-        #region 筛选
-        static OSGeo.OGR.Layer selectFeat(OSGeo.OGR.Layer slopePolyLayer, OSGeo.OGR.Layer dzxPolyLayer)
-        {
-            shpDataSet.deleteLayerByName("res");
-            OSGeo.OGR.Layer resLayer = shpDataSet.CreateLayer("res", srs, dzxPolyLayer.GetGeomType(), null);
-            StaticTools.msgLine("selection...");
-            int pdCount = slopePolyLayer.GetFeatureCount(0);
-            int dzCount = dzxPolyLayer.GetFeatureCount(0);
-
-            // 通过是否相交和面积差,获得最小面积差相交要素的ID数组
-            for (int pdi = 0; pdi < pdCount; pdi++)
-            {
-                OSGeo.OGR.Geometry pdGeom = slopePolyLayer.GetFeature(pdi).GetGeometryRef();
-                double pdArea = pdGeom.GetArea();
-                double afterCha = -1;
-                int yesID = -1;
-
-                for (int dzi = 0; dzi < dzCount; dzi++)
-                {
-                    OSGeo.OGR.Geometry dzGeom = dzxPolyLayer.GetFeature(dzi).GetGeometryRef();
-                    if (pdGeom.Intersect(dzGeom))
-                    {
-                        double cha = Math.Abs(dzGeom.GetArea() - pdArea);
-                        if (afterCha == -1)
-                        {
-                            afterCha = cha;
-                            yesID = dzi;
-                        }
-                        else if (cha < afterCha)
-                        {
-                            afterCha = cha;
-                            yesID = dzi;
-                        }
-                    }
-                }
-                StaticTools.progress((pdi + 1) * 100 / pdCount, $"{pdi}//{pdCount}");
-                
-                if (yesID != -1)
-                    resLayer.CreateFeature(dzxPolyLayer.GetFeature(yesID));
-            }
-
-            if (IsDelete)
-            {
-                shpDataSet.deleteLayerByName(slopePolyLayer.GetName());
-                shpDataSet.deleteLayerByName(dzxPolyLayer.GetName());
-            }
-            return cleanLayer(resLayer);
-        }
-        static OSGeo.OGR.Layer selectFeat_bak(OSGeo.OGR.Layer slopePolyLayer, OSGeo.OGR.Layer dzxPolyLayer)
-        {
-            shpDataSet.deleteLayerByName("res");
-            OSGeo.OGR.Layer resLayer = shpDataSet.CreateLayer("res", null, OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
-            StaticTools.msgLine("selection...");
-            int pdCount = slopePolyLayer.GetFeatureCount(0);
-            int dzCount = dzxPolyLayer.GetFeatureCount(0);
-            int times = 0;
-            // 通过是否相交和面积差,获得最小面积差相交要素的ID数组
-            for (int pdi = 0; pdi < pdCount; pdi++)
-            {
-                OSGeo.OGR.Feature pdFeat = slopePolyLayer.GetFeature(pdi);
-                OSGeo.OGR.Geometry pdGeom = pdFeat.GetGeometryRef();
-                double pdArea = pdGeom.GetArea();
-                double afterCha = -1;
-                int yesID = -1;
-                //new Thread(new ThreadStart(() =>
-                //{
-                for (int dzi = 0; dzi < dzCount; dzi++)
-                {
-                    OSGeo.OGR.Feature dzFeat = null;
-                    lock (dzxPolyLayer)
-                        dzFeat = dzxPolyLayer.GetFeature(dzi).Clone();
-                    OSGeo.OGR.Geometry dzGeom = dzFeat.GetGeometryRef();
-                    if (pdGeom.Intersect(dzGeom))
-                    {
-                        double cha = Math.Abs(dzGeom.GetArea() - pdArea);
-                        if (afterCha == -1)
-                        {
-                            afterCha = cha;
-                            yesID = dzi;
-                        }
-                        else if (cha < afterCha)
-                        {
-                            afterCha = cha;
-                            yesID = dzi;
-                        }
-                    }
-                    dzGeom.Dispose();
-                    dzFeat.Dispose();
-                }
-                StaticTools.progress((pdi + 1) * 100 / pdCount, $"{pdi}//{pdCount}");
-
-                pdGeom.Dispose();
-                pdFeat.Dispose();
-
-                if (yesID != -1)
-                    resLayer.CreateFeature(dzxPolyLayer.GetFeature(yesID));
-                //        times++;
-                //    })).Start();
-            }
-            //while (times < pdCount)
-            //{
-            //    Console.WriteLine("{0}/{1}", times, pdCount);
-            //    Thread.Sleep(1000);
-            //}
-
-            if (IsDelete)
-            {
-                shpDataSet.deleteLayerByName(slopePolyLayer.GetName());
-                shpDataSet.deleteLayerByName(dzxPolyLayer.GetName());
-            }
-            return cleanLayer(resLayer);
-        }
+        
         #endregion
 
         #region 简化

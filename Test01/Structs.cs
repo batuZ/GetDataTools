@@ -14,7 +14,7 @@ namespace Test01
         public double Z;
     }
 
-  
+
     public class OrderPoint
     {
         public int X;
@@ -191,4 +191,18 @@ namespace Test01
         }
     }
     #endregion
+
+    /// <summary>
+    /// 筛选要素时，先分区归类，减少遍历数量
+    /// </summary>
+    class CutBox
+    {
+        public List<int> pdxIDs;
+        public List<int> dzxIDs;
+        public CutBox()
+        {
+            pdxIDs = new List<int>();
+            dzxIDs = new List<int>();
+        }
+    }
 }
