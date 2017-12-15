@@ -12,7 +12,7 @@ namespace Test01
 {
     class Program
     {
-        static string dsmPath = @"E:\work\C-长春\DEM\changchun_dsm05.img";// @"D:\temp\outlinetest01.img";// 
+        static string dsmPath = @"E:\work\C-长春\DEM\changchun_dsm05.img";//  @"D:\temp\outlinetest01.img";//  
         static string shpSaveFile = @"D:\temp\asf\resClear.shp";             //  save
         static string shpSavePath = Path.GetDirectoryName(shpSaveFile);     //  C:\temp\asf\
         static string slopePath = shpSavePath + "\\a.img";                  //  C:\temp\asf\a.img
@@ -74,7 +74,7 @@ namespace Test01
             StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
             OSGeo.OGR.Layer dzxPolyLayer = cleanDZX(dzx);
             StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
-
+   
             //4 筛选
             OSGeo.OGR.Layer selectLayer = selectionFeatuers(slopeCleanLayer, dzxPolyLayer);
             StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
@@ -637,7 +637,7 @@ namespace Test01
                     subCutGeom.AddPoint(RB.X, RB.Y, 0);
                     //封闭poly
                     subCutGeom.AddPoint(LB.X, LB.Y, 0);
-                    
+
                     OSGeo.OGR.Geometry cutGeom = new OSGeo.OGR.Geometry(OSGeo.OGR.wkbGeometryType.wkbPolygon);
                     cutGeom.AddGeometry(subCutGeom);
                     OSGeo.OGR.Feature cutFeat = new OSGeo.OGR.Feature(new OSGeo.OGR.FeatureDefn(""));
@@ -654,54 +654,47 @@ namespace Test01
         /// <param name="andArea">是否判断最小面积</param>
         /// <param name="minArea">最小面积</param>
         /// <returns></returns>
-        public static OSGeo.OGR.Layer cleanLayer_FF(OSGeo.OGR.Layer inLayer, bool andArea = false, double minArea = 0)
+        public static OSGeo.OGR.Layer cleanLayer_FF(OSGeo.OGR.Layer inLayer)
         {
             string oldLayerName = inLayer.GetName();
             string newLayerName = oldLayerName + "Clear";
             shpDataSet.deleteLayerByName(newLayerName);
-            OSGeo.OGR.Layer outLayer = shpDataSet.CreateLayer(newLayerName, inLayer.GetSpatialRef(), inLayer.GetGeomType(), null);
-            StaticTools.msgLine("clean SlopeLine...");
+            OSGeo.OGR.Layer outLayer = shpDataSet.CreateLayer(newLayerName, srs, inLayer.GetGeomType(), null);
+           
             int featCount = inLayer.GetFeatureCount(0);
+            StaticTools.msgLine($"clean resLine... before {featCount}");
             for (int i = 0; i < featCount - 1; i++)
             {
                 bool isOnly = true;
                 OSGeo.OGR.Feature ori = inLayer.GetFeature(i);
-
-                if (andArea && ori.GetGeometryRef().GetArea() < minArea)
+                OSGeo.OGR.Envelope oriEnve = new OSGeo.OGR.Envelope();
+                ori.GetGeometryRef().GetEnvelope(oriEnve);
+                double maxCha = 1;
+                for (int j = i + 1; j < featCount; j++)
                 {
-                    isOnly = false;
-                }
-                else
-                {
-                    OSGeo.OGR.Envelope oriEnve = new OSGeo.OGR.Envelope();
-                    ori.GetGeometryRef().GetEnvelope(oriEnve);
-                    double maxCha = 1;
-                    for (int j = i + 1; j < featCount; j++)
+                    OSGeo.OGR.Feature next = inLayer.GetFeature(j);
+                    OSGeo.OGR.Envelope nextEnve = new OSGeo.OGR.Envelope();
+                    next.GetGeometryRef().GetEnvelope(nextEnve);
+                    if (Math.Abs(oriEnve.MaxX - nextEnve.MaxX) < maxCha &&
+                        Math.Abs(oriEnve.MaxY - nextEnve.MaxY) < maxCha &&
+                        Math.Abs(oriEnve.MinX - nextEnve.MinX) < maxCha &&
+                        Math.Abs(oriEnve.MinY - nextEnve.MinY) < maxCha)
                     {
-                        OSGeo.OGR.Feature next = inLayer.GetFeature(j);
-                        OSGeo.OGR.Envelope nextEnve = new OSGeo.OGR.Envelope();
-                        next.GetGeometryRef().GetEnvelope(nextEnve);
-                        if (Math.Abs(oriEnve.MaxX - nextEnve.MaxX) < maxCha &&
-                            Math.Abs(oriEnve.MaxY - nextEnve.MaxY) < maxCha &&
-                            Math.Abs(oriEnve.MinX - nextEnve.MinX) < maxCha &&
-                            Math.Abs(oriEnve.MinY - nextEnve.MinY) < maxCha)
-                        {
-                            isOnly = false;
-                            break;
-                        }
+                        isOnly = false;
+                        break;
                     }
-                    if (isOnly)
-                        outLayer.CreateFeature(ori);
-                    ori.Dispose();
-                    StaticTools.progress((i + 2) * 100 / featCount, $"{i + 1} / {featCount}");
                 }
+                if (isOnly)
+                    outLayer.CreateFeature(ori);
+                ori.Dispose();
+                StaticTools.progress((i + 2) * 100 / featCount, $"{i + 1} / {featCount}");
             }
             if (IsDelete)
                 shpDataSet.deleteLayerByName(inLayer.GetName());
-
+            StaticTools.msgLine($"clean resLine... after {outLayer.GetFeatureCount(0)}");
             return outLayer;
         }
-        
+
         #endregion
 
         #region 简化
@@ -713,6 +706,7 @@ namespace Test01
         private static void jianhua(OSGeo.OGR.Layer resLayer, double jiaodu, int cishu)
         {
             StaticTools.msgLine("huajian...");
+            StaticTools.progress(0);
             for (int i = cishu; i > 0; i--)
             {
                 resLayer.claenPoint(jiaodu, i);
