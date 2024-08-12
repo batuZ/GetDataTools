@@ -12,6 +12,7 @@ using System.IO;
 using System.Threading;
 using System.Diagnostics;
 using System.Media;
+using OSGeo.GDAL;
 namespace GetDataTools
 {
     public partial class MasterWin : Form
@@ -226,7 +227,7 @@ namespace GetDataTools
         {
             if (labDSMin.Text != "")
             {
-                OSGeo.GDAL.Gdal.AllRegister();
+                Gdal.AllRegister();
                 OSGeo.GDAL.Dataset ds = OSGeo.GDAL.Gdal.Open(labDSMin.Text, OSGeo.GDAL.Access.GA_ReadOnly);
                 double[] a = new double[6];
                 ds.GetGeoTransform(a);

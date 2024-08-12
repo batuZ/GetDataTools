@@ -145,7 +145,7 @@ namespace GetDataTools._3_筛选轮廓
             OSGeo.OGR.DataSource pdDS = dr.Open(pdx, 0);
             OSGeo.OGR.Layer pdLayer = pdDS.GetLayerByIndex(0);
 
-            int pdCount = pdLayer.GetFeatureCount(0);
+            var pdCount = pdLayer.GetFeatureCount(0);
             for (int pdi = 0; pdi < pdCount; pdi++)
             {
                 OSGeo.OGR.Feature pdFeat = pdLayer.GetFeature(pdi);
@@ -182,7 +182,7 @@ namespace GetDataTools._3_筛选轮廓
 
                 OSGeo.OGR.Geometry pdGeom = pdFeat.GetGeometryRef();
 
-                int dzCount = dzxLayer.GetFeatureCount(0);
+                long dzCount = dzxLayer.GetFeatureCount(0);
 
                 for (int dzi = 0; dzi < dzCount; dzi++)
                 {

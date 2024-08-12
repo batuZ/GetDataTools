@@ -59,7 +59,7 @@ namespace GetDataTools._3_筛选轮廓
             int allX = dsmDs.RasterXSize;
             int allY = dsmDs.RasterYSize;
             //开始计算每个Feature需要读取的栅格参数
-            int featCount = oriLayer.GetFeatureCount(0);
+            long featCount = oriLayer.GetFeatureCount(0);
             for (int i = 0; i < featCount; i++)
             {
                 int[] subRasterOff_Size = subRasterInfo(transfrom, allX, allY, bufLayer.GetFeature(i));
@@ -107,7 +107,7 @@ namespace GetDataTools._3_筛选轮廓
                 FieldDefn hight = new FieldDefn("HIGHT", FieldType.OFTReal);
                 oriLayer.CreateField(hight, 1);
             }
-            int featCount = oriLayer.GetFeatureCount(0);
+            long featCount = oriLayer.GetFeatureCount(0);
             tickTime = 0;
             oriDs.Dispose();
             for (int i = 0; i < featCount; i++)
@@ -301,7 +301,7 @@ namespace GetDataTools._3_筛选轮廓
             DataSource bufferDs = dr.CreateDataSource(bufferFile, null);
             Layer bufferLayer = bufferDs.CreateLayer(inLayer.GetName(), inLayer.GetSpatialRef(), inLayer.GetGeomType(), null);
 
-            int featCount = inLayer.GetFeatureCount(0);
+            long featCount = inLayer.GetFeatureCount(0);
             for (int i = 0; i < featCount; i++)
             {
                 Feature inFeat = inLayer.GetFeature(i);

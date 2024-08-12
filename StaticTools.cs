@@ -183,7 +183,7 @@ namespace GetDataTools
         /// <returns></returns>
         public static Point[] shpPointToPointGroup(this Layer pointLayer)
         {
-            int pointCount = pointLayer.GetFeatureCount(0);
+            long pointCount = pointLayer.GetFeatureCount(0);
             Point[] toPG = new Point[pointCount];
             for (int i = 0; i < pointCount; i++)
             {

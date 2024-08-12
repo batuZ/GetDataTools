@@ -229,7 +229,7 @@ namespace GetDataTools._2_坡度线.OutLine
             ods.SetGeoTransform(geoTran2);
             ods.GetRasterBand(1).SetNoDataValue(-999999);
             //写
-            Gdal.ReprojectImage(ds, ods, null, null, ResampleAlg.GRA_NearestNeighbour, 0, 0.02, null, null);
+            Gdal.ReprojectImage(ds, ods, null, null, ResampleAlg.GRA_NearestNeighbour, 0, 0.02, null, null, null);
             ds.Dispose();
             ods.Dispose();
             Console.WriteLine("【ReprojectImage完成！】");
@@ -350,7 +350,7 @@ namespace GetDataTools._2_坡度线.OutLine
             OSGeo.OGR.Driver dr = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
             OSGeo.OGR.DataSource ds = dr.Open(filePath, 1);
             OSGeo.OGR.Layer layer = ds.GetLayerByIndex(0);
-            int featCount = layer.GetFeatureCount(0);
+            long featCount = layer.GetFeatureCount(0);
             Console.WriteLine("开始多线程删除重复内容！");
             var sw = new System.Diagnostics.Stopwatch(); sw.Start();
             //初始化
@@ -358,7 +358,7 @@ namespace GetDataTools._2_坡度线.OutLine
             ids.Clear();
             for (int i = 0; i < featCount - 1; i++)
             {
-                getDoubFeat(filePath, i, featCount);
+                getDoubFeat(filePath, i, (int)featCount);
             }
             while (tickTime < featCount - 1)
             {

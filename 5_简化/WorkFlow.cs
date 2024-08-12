@@ -45,7 +45,7 @@ namespace GetDataTools._5_简化
             DataSource outDS = dr.CreateDataSource(outFile, null);
             Layer outLayer = outDS.CreateLayer("outLayer", null, wkbGeometryType.wkbPolygon, null);
 
-            int featCount = inLayer.GetFeatureCount(0);
+            long featCount = inLayer.GetFeatureCount(0);
             for (int i = 0; i < featCount; i++)
             {
                 Feature aFeatuer = inLayer.GetFeature(i);

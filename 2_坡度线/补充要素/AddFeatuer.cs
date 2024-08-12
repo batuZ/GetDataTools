@@ -25,7 +25,7 @@ namespace GetDataTools._2_坡度线.补充要素
 
             List<int> staIds = new List<int>();
             int poiCount = WorkFlow.pointIds.Count;
-            int slopCount = slopLayer.GetFeatureCount(0);
+            long slopCount = slopLayer.GetFeatureCount(0);
 
             for (int i = 0; i < poiCount; i++)
             {
@@ -73,8 +73,8 @@ namespace GetDataTools._2_坡度线.补充要素
             OSGeo.OGR.Layer dzxLayer = dzxDS.GetLayerByIndex(0);
             OSGeo.OGR.Layer newLayer = newDS.CreateLayer("", dzxLayer.GetSpatialRef(), dzxLayer.GetGeomType(), null);
 
-            int poiCount = poiLayer.GetFeatureCount(0);
-            int dzxCount = dzxLayer.GetFeatureCount(0);
+            long poiCount = poiLayer.GetFeatureCount(0);
+            long dzxCount = dzxLayer.GetFeatureCount(0);
 
             for (int i = 0; i < poiCount; i++)
             {
@@ -114,7 +114,7 @@ namespace GetDataTools._2_坡度线.补充要素
             OSGeo.OGR.Layer newLayer = newDS.CreateLayer("", null, OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
     
             tickTime = 0;
-            int poiCount = poiLayer.GetFeatureCount(0);
+            long poiCount = poiLayer.GetFeatureCount(0);
             
             for (int i = 0; i < poiCount; i++)
             {
@@ -138,7 +138,7 @@ namespace GetDataTools._2_坡度线.补充要素
                 OSGeo.OGR.Driver dr = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
                 OSGeo.OGR.DataSource dzxDS = dr.Open(dzx, 0);
                 OSGeo.OGR.Layer dzxLayer = dzxDS.GetLayerByIndex(0);
-                int dzxCount = dzxLayer.GetFeatureCount(0);
+                long dzxCount = dzxLayer.GetFeatureCount(0);
                 OSGeo.OGR.Geometry poiGeom = poiFeat.GetGeometryRef();
                 for (int i = 0; i < dzxLayer.GetFeatureCount(0); i++)
                 {

@@ -108,7 +108,7 @@
             // 
             // openFileDSM
             // 
-            this.openFileDSM.Filter = "DSM|*.img";
+            this.openFileDSM.Filter = "DSM|*.tif";
             this.openFileDSM.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDSM_FileOk);
             // 
             // saveFileSHP

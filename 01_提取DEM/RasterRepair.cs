@@ -90,7 +90,7 @@ namespace GetDataTools._01_提取DEM
         private int _hasVal;
         private double[] _geoTransform;
         private int iCount;
-        private int iMaxCount;
+        private long iMaxCount;
         private Layer _layer;
         private Queue<RasBlock> rasBlock_res_Queue;
         private int Cnt_Thr = 0;
@@ -135,10 +135,10 @@ namespace GetDataTools._01_提取DEM
                 }
                 ThreadProc3(_ms);//进行异步计算
             }
-            
+
             //等待异步结果
 
-            int time = _layer.GetFeatureCount(1), cur = 0;
+            long time = _layer.GetFeatureCount(1), cur = 0;
             while (cur < time)
             {
                 if (rasBlock_res_Queue.Count > 0)

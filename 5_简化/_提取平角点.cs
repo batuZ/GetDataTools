@@ -70,7 +70,7 @@ namespace GetDataTools._5_简化
             var pointDs = dr.CreateDataSource(outFile, null);
             var pointLayer = pointDs.CreateLayer("PointLayer", null, wkbGeometryType.wkbPoint, null);
 
-            int featCount = layer.GetFeatureCount(0);
+            long featCount = layer.GetFeatureCount(0);
             for (int i = 0; i < featCount; i++)
             {
                 Feature afeat = layer.GetFeature(i);

@@ -33,7 +33,7 @@ namespace GetDataTools._5_简化
             OSGeo.OGR.DataSource targDs = dr.CreateDataSource(savefile, null);
             OSGeo.OGR.Layer targLayer = targDs.CreateLayer("targ", null, OSGeo.OGR.wkbGeometryType.wkbPolygon, null);
 
-            int featCount = oriLayer.GetFeatureCount(0);
+            long featCount = oriLayer.GetFeatureCount(0);
             for (int i = 0; i < featCount; i++)
             {
                 ///进来的Featuer
@@ -87,7 +87,7 @@ namespace GetDataTools._5_简化
             OSGeo.OGR.DataSource oriDs = dr.Open(filePath, 1);
             OSGeo.OGR.Layer oriLayer = oriDs.GetLayerByIndex(0);
 
-            int featCount = oriLayer.GetFeatureCount(0);
+            var featCount = oriLayer.GetFeatureCount(0);
 
             for (int i = 0; i < featCount; i++)
             {
@@ -207,7 +207,7 @@ namespace GetDataTools._5_简化
             DataSource outds = dr.CreateDataSource(outFile, null);
             Layer outLayer = outds.CreateLayer("", null, wkbGeometryType.wkbPolygon, null);
 
-            int featCount = inLayer.GetFeatureCount(0);
+            long featCount = inLayer.GetFeatureCount(0);
 
             for (int i = 0; i < featCount; i++)
             {

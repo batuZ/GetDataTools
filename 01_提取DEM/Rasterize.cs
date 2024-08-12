@@ -52,9 +52,9 @@ namespace GetDataTools._01_提取DEM
             Dataset outputDataset = outputDriver.Create(outputRasterFile, x_res, y_res, 1, DataType.GDT_Float64, null);
             //Extrac srs from input feature   
             string inputShapeSrs;
-
+            string[] aa = { @"aa", @"bb" };
             OSGeo.OSR.SpatialReference spatialRefrence = layer.GetSpatialRef();
-            spatialRefrence.ExportToWkt(out inputShapeSrs);
+            spatialRefrence.ExportToWkt(out inputShapeSrs, aa);
             //Assign input feature srs to outpur raster  
             outputDataset.SetProjection(inputShapeSrs);
             //Geotransform  
@@ -144,7 +144,8 @@ namespace GetDataTools._01_提取DEM
             OSGeo.OSR.SpatialReference spatialRefrence = layer.GetSpatialRef();
             if (spatialRefrence != null)
             {
-                spatialRefrence.ExportToWkt(out inputShapeSrs);
+                string[] aa = {  };
+                spatialRefrence.ExportToWkt(out inputShapeSrs,aa);
                 //Assign input feature srs to outpur raster  
                 outputDataset.SetProjection(inputShapeSrs);
             }

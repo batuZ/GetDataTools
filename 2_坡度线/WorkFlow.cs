@@ -45,7 +45,7 @@ namespace GetDataTools._2_坡度线
             OSGeo.OGR.Driver dr = OSGeo.OGR.Ogr.GetDriverByName("ESRI shapefile");
             OSGeo.OGR.DataSource pointDs = dr.Open(point, 0);
             OSGeo.OGR.Layer pointLayer = pointDs.GetLayerByIndex(0);
-            int pointCount = pointLayer.GetFeatureCount(0);
+            long pointCount = pointLayer.GetFeatureCount(0);
             for (int i = 0; i < pointCount; i++)
             {
                 pointIds.Add(i);

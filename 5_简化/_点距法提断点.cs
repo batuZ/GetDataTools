@@ -27,7 +27,7 @@ namespace GetDataTools._5_简化
             Layer shpLayer = shpDs.GetLayerByIndex(0);
             Layer newLayer = newDs.CreateLayer("", null, wkbGeometryType.wkbPolygon, null);
 
-            int featCount = shpLayer.GetFeatureCount(0);
+            long featCount = shpLayer.GetFeatureCount(0);
             for (int i = 0; i < featCount; i++)
             {
                 Feature inFeat = shpLayer.GetFeature(i);

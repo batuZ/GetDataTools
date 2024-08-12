@@ -64,7 +64,7 @@ namespace GetDataTools._1_等值线
             OSGeo.OGR.Layer dzxLayer = dzxDS.GetLayerByIndex(0);
 
             //获取Featuer数
-            int featCount = dzxLayer.GetFeatureCount(0);
+            long featCount = dzxLayer.GetFeatureCount(0);
 
             // 1 拿到每个Featuer的Value
             double[] values = new double[featCount];
